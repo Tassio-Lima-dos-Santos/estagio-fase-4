@@ -52,7 +52,7 @@
 #define IADC_READ_PERIOD 1000 // 1000 ms
 
 //#define USE_SLEEPTIMER
-#define USE_ZIGBEE_EVENT
+//#define USE_ZIGBEE_EVENT
 
 /******************************************************************************
  * Data types

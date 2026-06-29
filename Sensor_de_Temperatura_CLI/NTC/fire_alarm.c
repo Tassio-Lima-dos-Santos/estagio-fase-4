@@ -28,8 +28,23 @@
  * Defines
  *****************************************************************************/
 
+// Periodic polling implementation
 // #define USE_SLEEPTIMER
 #define USE_ZIGBEE_EVENT
+
+// ISO 7240-5 related defines
+//#define ALARM_TEMP_C     58.0f  // 58 °C, 4 degrees above the minimum static temperature of response, for avoiding false positives
+#define CONFIRM_COUNT    3      // 3 consecutive reads = 3 s
+//#define TEMPERATURE_FILTER
+
+#ifdef TEMPERATURE_FILTER
+// Filtro IIR de primeira ordem — equivale ao modelo térmico τ·dθ/dt + θ = T_ar
+// tau_s = constante de tempo em segundos (ex: 20 s para A1)
+// dt_s  = período de amostragem em segundos
+
+#define TAU_S   20.0f
+#define DT_S    1.0f
+#endif // TEMPERATURE_FILTER
 
 /******************************************************************************
  * Data types
@@ -54,7 +69,14 @@ static uint16_t global_loop_temperature_period;
 
 #endif // defined(USE_ZIGBEE_EVENT)
 
+// Array used for saving the data of triggering and safe temperature of a set alarm
 static double temperature_data[2] = {0};
+
+static uint8_t alarm_count = 0;
+
+#ifdef TEMPERATURE_FILTER
+static float temperature_filtered = 25.0f;  // começa na temp ambiente
+#endif // TEMPERATURE_FILTER
 
 /******************************************************************************
  * Extern
@@ -234,7 +256,16 @@ void on_timeout_loop_temperature (sl_sleeptimer_timer_handle_t *handle, void *da
 #elif defined(USE_ZIGBEE_EVENT)
 
 static void loop_temperature_event_handler(sl_zigbee_event_t *event){
+#ifndef TEMPERATURE_FILTER
   double temperature = NTC_read_temperature();
+#else // ifdef TEMPERATURE_FILTER
+  float alpha = DT_S / (TAU_S + DT_S);  // coeficiente do filtro
+  float temp_raw = NTC_read_temperature();
+
+  temperature_filtered = alpha * temp_raw + (1.0f - alpha) * temperature_filtered;
+
+  double temperature = temperature_filtered;
+#endif // TEMPERATURE_FILTER
 
   printf("\r\nCurrent temperature: %.1lf C\r\n", temperature);
 
@@ -247,10 +278,46 @@ static void temperature_verification_event_handler(sl_zigbee_event_t *event){
 
   if( (triggering_temperature <= safe_temperature) || (safe_temperature < MIN_SAFE_TEMPERATURE) || (triggering_temperature > MAX_TRIGGERING_TEMPERATURE) ) return;
 
+#ifndef TEMPERATURE_FILTER
   double current_temperature = NTC_read_temperature();
+#else // ifdef TEMPERATURE_FILTER
+  float alpha = DT_S / (TAU_S + DT_S);  // coeficiente do filtro
+  float temp_raw = NTC_read_temperature();
 
-  if(current_temperature >= triggering_temperature) trigger_alarm();
-  else if(current_temperature <= safe_temperature) turn_off_alarm();
+  temperature_filtered = alpha * temp_raw + (1.0f - alpha) * temperature_filtered;
+
+  double current_temperature = temperature_filtered;
+#endif // TEMPERATURE_FILTER
+
+#ifndef ALARM_TEMP_C
+
+  if (current_temperature >= triggering_temperature) {
+    alarm_count++;
+    if (alarm_count >= CONFIRM_COUNT) {
+      trigger_alarm();
+      alarm_count = 0;
+    }
+  } else if (current_temperature <= safe_temperature) {
+      turn_off_alarm();
+      alarm_count = 0;  // reseta se baixar
+  }
+  else {
+    alarm_count = 0;  // reseta se baixar
+  }
+
+#else // if def(ALARM_TEMP_C)
+
+  if (temp >= ALARM_TEMP_C) {
+    alarm_count++;
+    if (alarm_count >= CONFIRM_COUNT) {
+      trigger_alarm();
+      alarm_count = 0;  // reseta se baixar
+    }
+  } else {
+      alarm_count = 0;  // reseta se baixar
+  }
+
+#endif
 
   sl_zigbee_event_set_delay_ms(event, global_temperature_verification_period);
 }
