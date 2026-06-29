@@ -1,0 +1,7 @@
+---
+workspace_name: "ZigbeeMinimal"
+label: "ZigbeeMinimal"
+project:
+- id: "main"
+  path: "Sensor_de_Temperatura_CLI.slcp"
+  output: "."

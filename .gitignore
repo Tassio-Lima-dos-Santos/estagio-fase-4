@@ -1,55 +1,32 @@
-# Prerequisites
-*.d
+# ===== Regra genérica: qualquer projeto dentro de /projects =====
 
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
+# 1) Ignora TUDO que estiver em /projects
+/projects/**
 
-# Linker output
-*.ilk
-*.map
-*.exp
+# 2) Reabra /projects e cada subpasta imediata (cada projeto)
+!/projects/
+!/projects/*/
 
-# Precompiled Headers
-*.gch
-*.pch
+# 3) Permita, para QUALQUER projeto (pasta logo abaixo de /projects), estas pastas e seus conteúdos:
+!/projects/*/DWIN_SET/
+!/projects/*/DWIN_SET/**
+!/projects/*/image/
+!/projects/*/image/**
+!/projects/*/TFT/
+!/projects/*/TFT/**
+!/projects/*/DWprj.hmi
+!/projects/*/DWprj.tft
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
+!.gitignore
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+/.browser/
+/.metadata/
+/outgoing/
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
-
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
-
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
-
-# debug information files
-*.dwo
+.pdm/
+.settings/
+.uceditor/
+autogen/
+config/
+gecko_sdk_4.4.6/
+GNU ARM v12.2.1 - Default/

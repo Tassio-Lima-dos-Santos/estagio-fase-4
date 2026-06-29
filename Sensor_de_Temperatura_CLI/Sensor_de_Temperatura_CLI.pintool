@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="ASCII"?>
+<device:XMLDevice xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:device="http://www.silabs.com/ss/hwconfig/document/device.ecore" name="pin_tool.MGM210PA32JIA" partId="mcu.arm.efr32.mg21.mgm210pa32jia" contextId="com.silabs.sdk.stack.super:4.4.6._-1502756843">
+  <mode name="DefaultMode">
+    <property object="DefaultMode" propertyId="mode.diagramLocation" value="100, 100"/>
+    <property object="PA03" propertyId="ABModule.selectedRequirement" value="gpio%T%SL_SIMPLE_BUTTON_RESET%T%sl_simple_button_reset_config.h"/>
+    <property object="PD00" propertyId="pin.reserve" value="Reserved"/>
+    <property object="PD01" propertyId="ABModule.selectedRequirement" value="gpio%T%SL_SIMPLE_LED_SINALIZACAO%T%sl_simple_led_sinalizacao_config.h"/>
+    <property object="PD01" propertyId="pin.name" value=""/>
+    <property object="PORTIO" propertyId="portio.timer1.location.cc0" value="49"/>
+    <property object="PORTIO" propertyId="portio.usart0.enable.rx" value="Enabled"/>
+    <property object="PORTIO" propertyId="portio.usart0.enable.tx" value="Enabled"/>
+    <property object="PORTIO" propertyId="portio.usart0.location.rx" value="52"/>
+    <property object="PORTIO" propertyId="portio.usart0.location.tx" value="51"/>
+    <property object="PTI" propertyId="ABModule.selectedRequirement" value="pti%T%SL_RAIL_UTIL_PTI%T%sl_rail_util_pti_config.h"/>
+    <property object="PTI" propertyId="ABPeripheral.included" value="true"/>
+    <property object="TIMER0" propertyId="ABModule.selectedRequirement" value="timer%T%USTIMER%T%ustimer_config.h"/>
+    <property object="TIMER0" propertyId="ABPeripheral.included" value="true"/>
+    <property object="TIMER1" propertyId="ABModule.selectedRequirement" value="timer%T%SL_SIMPLE_RGB_PWM_LED_SINALIZACAO%T%sl_simple_rgb_pwm_led_sinalizacao_config.h"/>
+    <property object="TIMER1" propertyId="ABPeripheral.included" value="true"/>
+    <property object="TIMER1" propertyId="channel.0.name" value=""/>
+    <property object="USART0" propertyId="ABModule.selectedRequirement" value="usart%T%SL_IOSTREAM_USART_INST_USART%T%sl_iostream_usart_inst_usart_config.h"/>
+    <property object="USART0" propertyId="ABPeripheral.included" value="true"/>
+    <property object="USART1" propertyId="ABPeripheral.included" value="true"/>
+    <property object="USART2" propertyId="ABPeripheral.included" value="true"/>
+  </mode>
+  <modeTransition>
+    <property object="RESET &#x2192; DefaultMode" propertyId="modeTransition.source" value="RESET"/>
+    <property object="RESET &#x2192; DefaultMode" propertyId="modeTransition.target" value="DefaultMode"/>
+  </modeTransition>
+</device:XMLDevice>
