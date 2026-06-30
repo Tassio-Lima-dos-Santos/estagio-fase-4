@@ -14,6 +14,7 @@
 
 #include "NTC.h"
 #include "IADC.h"
+#include "zigbee_app_framework_event.h"
 
 /******************************************************************************
  * Defines
@@ -31,6 +32,15 @@
 #define VDD 3000 // 3000 mV
 #define R_FIXO 10000 // 10 k ohm
 
+#ifdef TEMPERATURE_FILTER
+// Filtro IIR de primeira ordem — equivale ao modelo térmico τ·dθ/dt + θ = T_ar
+// tau_s = constante de tempo em segundos (ex: 20 s para A1)
+// dt_s  = período de amostragem em segundos
+#define TEMPERATURE_POLLING_PERIOD 1000 // 1000 ms between each polling
+#define TAU_S   20.0f
+#define DT_S    (TEMPERATURE_POLLING_PERIOD / 1000.0f)
+#endif // TEMPERATURE_FILTER
+
 /******************************************************************************
  * Data types
  *****************************************************************************/
@@ -46,6 +56,11 @@ typedef struct {
 
 static const st_ntc_temp_t stNtcTempTable[] = GS_NTC_TEMP;
 
+#ifdef TEMPERATURE_FILTER
+static sl_zigbee_event_t filtered_temperature_polling_event;
+static volatile float temperature_filtered = 25.0f;  // começa na temp ambiente
+#endif // TEMPERATURE_FILTER
+
 /******************************************************************************
  * Extern
  *****************************************************************************/
@@ -54,6 +69,14 @@ static const st_ntc_temp_t stNtcTempTable[] = GS_NTC_TEMP;
  * Private Function Prototypes
  *****************************************************************************/
 static float map(float value, float in_min, float in_max, float out_min, float out_max);
+static double NTC_milivoltage_to_resistance(double milivolts);
+static double NTC_resistance_to_temperature(double resistance);
+static double NTC_milivoltage_to_temperature(double milivolts);
+static double NTC_read_raw_temperature(void);
+
+#ifdef TEMPERATURE_FILTER
+static void filtered_temperature_polling_event_handler(sl_zigbee_event_t *event);
+#endif // TEMPERATURE_FILTER
 
 /*******************************************************************************
  * Function name:
@@ -67,9 +90,14 @@ static float map(float value, float in_min, float in_max, float out_min, float o
  ******************************************************************************/
 void NTC_init(void){
   IADC_NTC_init();
+
+#ifdef TEMPERATURE_FILTER
+  sl_zigbee_event_init(&filtered_temperature_polling_event, filtered_temperature_polling_event_handler);
+  sl_zigbee_event_set_delay_ms(&filtered_temperature_polling_event, TEMPERATURE_POLLING_PERIOD);
+#endif
 }
 
-double NTC_milivoltage_to_resistance(double milivolts_NTC){
+static double NTC_milivoltage_to_resistance(double milivolts_NTC){
   // R_NTC = (V_NTC / (VDD - V_NTC) ) * R_FIXO
 
   double NTC_resistance = (milivolts_NTC / (VDD - milivolts_NTC) ) * R_FIXO;
@@ -77,7 +105,7 @@ double NTC_milivoltage_to_resistance(double milivolts_NTC){
   return (NTC_resistance);
 }
 
-double NTC_resistance_to_temperature(double resistance_NTC){
+static double NTC_resistance_to_temperature(double resistance_NTC){
   double reference_resistance_below = 0;
   double reference_temperature_below = 0;
 
@@ -102,21 +130,40 @@ double NTC_resistance_to_temperature(double resistance_NTC){
   return (temperature);
 }
 
-double NTC_milivoltage_to_temperature(double milivolts){
+static double NTC_milivoltage_to_temperature(double milivolts){
   double resistance = NTC_milivoltage_to_resistance(milivolts);
   double temperature = NTC_resistance_to_temperature(resistance);
 
   return (temperature);
 }
 
-double NTC_read_temperature(void){
+static double NTC_read_raw_temperature(void){
   double milivolts = IADC_read_milivolts();
   double temperature = NTC_milivoltage_to_temperature(milivolts);
 
   return (temperature);
 }
 
+double NTC_read_temperature(void){
+#ifndef TEMPERATURE_FILTER
+  return (NTC_read_raw_temperature());
+#else // ifdef TEMPERATURE_FILTER
+  return (temperature_filtered);
+#endif
+}
+
 static float map(float value, float in_min, float in_max, float out_min, float out_max) {
   float result = (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
   return (result);
 }
+
+#ifdef TEMPERATURE_FILTER
+static void filtered_temperature_polling_event_handler(sl_zigbee_event_t *event){
+  float k = DT_S / (TAU_S + DT_S);  // coeficiente do filtro
+  float temp_raw = NTC_read_raw_temperature();
+
+  temperature_filtered = k * temp_raw + (1.0f - k) * temperature_filtered;
+
+  sl_zigbee_event_set_delay_ms(event, TEMPERATURE_POLLING_PERIOD);
+}
+#endif // TEMPERATURE_FILTER
