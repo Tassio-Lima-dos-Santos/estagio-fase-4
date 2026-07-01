@@ -104,11 +104,18 @@ static const sl_cli_command_info_t cmd__disarm_alarm = \
                  "Nothing",
                  { SL_CLI_ARG_END, });
 
+static const sl_cli_command_info_t cmd__temperature_ramp = \
+  SL_CLI_COMMAND(temperature_ramp_cli_callback,
+                 "Simulates a temperature ramp from initial temperature to final temperature during a specified period of time",
+                 "Initial temperature: temperature in Celsius"SL_CLI_UNIT_SEPARATOR "Final temperature: temperature in Celsius"SL_CLI_UNIT_SEPARATOR "Duration: seconds",
+                 { SL_CLI_ARG_INT32, SL_CLI_ARG_INT32, SL_CLI_ARG_UINT32, SL_CLI_ARG_END, });
+
 static sl_cli_command_entry_t fire_detection_table[] = {
   { "get_temperature", &cmd__get_temperature, false },
   { "loop_temperature", &cmd__loop_temperature, false },
   { "set_alarm", &cmd__set_alarm, false },
   { "disarm_alarm", &cmd__disarm_alarm, false },
+  { "temperature_ramp", &cmd__temperature_ramp, false },
 
   { NULL, NULL, false },
 };

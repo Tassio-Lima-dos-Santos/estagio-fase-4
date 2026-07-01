@@ -25,6 +25,8 @@
  * Includes
  ******************************************************************************/
 
+#include "fire_alarm.h"
+
 /*******************************************************************************
  * Macros
  ******************************************************************************/
@@ -33,7 +35,9 @@
  * Defines
  ******************************************************************************/
 
-//#define TEMPERATURE_FILTER
+#ifdef SOLUCAO_CALCULO
+#define TEMPERATURE_FILTER
+#endif // SOLUCAO_CALCULO
 
 /*******************************************************************************
  * Typedef & Enums
@@ -47,8 +51,9 @@
  * Interface Functions
  ******************************************************************************/
 
-void NTC_init(void);
-double NTC_read_temperature(void);
+void NTC_init                       (void);
+float NTC_read_temperature          (void);
+void temperature_ramp_cli_callback  (sl_cli_command_arg_t *arguments);
 
 /*******************************************************************************
  * END

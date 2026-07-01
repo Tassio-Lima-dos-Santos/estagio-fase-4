@@ -31,8 +31,7 @@
 // Periodic polling implementation
 
 // ISO 7240-5 related defines
-//#define ALARM_TEMP_C     58.0f  // 58 °C, 4 degrees above the minimum static temperature of response, for avoiding false positives
-#define CONFIRM_COUNT    3      // 3 consecutive reads = 3 s
+//#define ALARM_TEMP_C     55.0f  // 55 °C, 2 degrees above the minimum static temperature of response, for avoiding false positives
 
 /******************************************************************************
  * Data types
@@ -50,9 +49,7 @@ static sl_zigbee_event_t loop_temperature_event;
 static uint16_t global_loop_temperature_period;
 
 // Array used for saving the data of triggering and safe temperature of a set alarm
-static double temperature_data[2] = {0};
-
-static uint8_t alarm_count = 0;
+static float temperature_data[2] = {0};
 
 /******************************************************************************
  * Extern
@@ -83,7 +80,7 @@ void turn_off_alarm (void);
 void get_temperature_cli_callback (sl_cli_command_arg_t *arguments){
   (void) arguments;
 
-  double temperature = NTC_read_temperature();
+  float temperature = NTC_read_temperature();
 
   printf("Current temperature: %.1lf C\r\n", temperature);
 }
@@ -156,7 +153,7 @@ void disarm_alarm (void){
 }
 
 static void loop_temperature_event_handler(sl_zigbee_event_t *event){
-  double temperature = NTC_read_temperature();
+  float temperature = NTC_read_temperature();
 
   printf("\r\nCurrent temperature: %.1lf C\r\n", temperature);
 
@@ -164,39 +161,25 @@ static void loop_temperature_event_handler(sl_zigbee_event_t *event){
 }
 
 static void temperature_verification_event_handler(sl_zigbee_event_t *event){
-  double triggering_temperature = temperature_data[0];
-  double safe_temperature       = temperature_data[1];
+  float triggering_temperature = temperature_data[0];
+  float safe_temperature       = temperature_data[1];
 
   if( (triggering_temperature <= safe_temperature) || (safe_temperature < MIN_SAFE_TEMPERATURE) || (triggering_temperature > MAX_TRIGGERING_TEMPERATURE) ) return;
 
-  double current_temperature = NTC_read_temperature();
+  float current_temperature = NTC_read_temperature();
 
 #ifndef ALARM_TEMP_C
 
   if (current_temperature >= triggering_temperature) {
-    alarm_count++;
-    if (alarm_count >= CONFIRM_COUNT) {
-      trigger_alarm();
-      alarm_count = 0;
-    }
+    trigger_alarm();
   } else if (current_temperature <= safe_temperature) {
-      turn_off_alarm();
-      alarm_count = 0;  // reseta se baixar
-  }
-  else {
-    alarm_count = 0;  // reseta se baixar
+    turn_off_alarm();
   }
 
 #else // if def(ALARM_TEMP_C)
 
   if (temp >= ALARM_TEMP_C) {
-    alarm_count++;
-    if (alarm_count >= CONFIRM_COUNT) {
-      trigger_alarm();
-      alarm_count = 0;  // reseta se baixar
-    }
-  } else {
-      alarm_count = 0;  // reseta se baixar
+    trigger_alarm();
   }
 
 #endif

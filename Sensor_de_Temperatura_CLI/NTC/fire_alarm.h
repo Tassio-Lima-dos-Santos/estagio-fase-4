@@ -37,7 +37,10 @@
  * Defines
  ******************************************************************************/
 
-#define TEMPERATURE_VERIFICATION_PERIOD 1000 // 1000 ms between each verification
+//#define SOLUCAO_CALCULO
+#define SOLUCAO_TABELA
+
+#define TEMPERATURE_VERIFICATION_PERIOD 4000 // 4000 ms between each verification
 #define MAX_TRIGGERING_TEMPERATURE      150
 #define MIN_SAFE_TEMPERATURE            -50
 #define ALARM_BLINK_PERIOD              100

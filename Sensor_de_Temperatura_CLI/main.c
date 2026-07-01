@@ -49,11 +49,6 @@
  * Defines
  *****************************************************************************/
 
-#define IADC_READ_PERIOD 1000 // 1000 ms
-
-//#define USE_SLEEPTIMER
-//#define USE_ZIGBEE_EVENT
-
 /******************************************************************************
  * Data types
  *****************************************************************************/
@@ -61,12 +56,6 @@
 /******************************************************************************
  * Static Variables
  *****************************************************************************/
-
-#ifdef USE_SLEEPTIMER
-static sl_sleeptimer_timer_handle_t timer_temperature_polling;
-#elif defined(USE_ZIGBEE_EVENT)
-static sl_zigbee_event_t temperature_polling_event;
-#endif // defined(USE_ZIGBEE_EVENT)
 
 /******************************************************************************
  * Extern
@@ -76,53 +65,9 @@ static sl_zigbee_event_t temperature_polling_event;
  * Private Function Prototypes
  *****************************************************************************/
 
-#ifdef USE_SLEEPTIMER
-static void timer_temperature_polling_callback(sl_sleeptimer_timer_handle_t *handle, void *data);
-#elif defined(USE_ZIGBEE_EVENT)
-static void temperature_polling_event_handler(sl_zigbee_event_t *event);
-#endif // defined(USE_ZIGBEE_EVENT)
-
 /*******************************************************************************
  **************************   PRIVATE FUNCTIONS   *******************************
  ******************************************************************************/
-
-#ifdef USE_SLEEPTIMER
-static void timer_temperature_polling_callback(sl_sleeptimer_timer_handle_t *handle, void *data){
-  // GPIO_PinOutToggle(gpioPortD, 1);
-
-  uint32_t raw_iadc = IADC_read_raw();
-  printf("Raw IADC: %lu\r\n", raw_iadc);
-
-  double milivolts = IADC_read_milivolts();
-  printf("Milivolts: %lf\r\n", milivolts);
-
-  double NTC_resistance = NTC_milivoltage_to_resistance(milivolts);
-  printf("NTC Resistance in Ohms: %lf\r\n", NTC_resistance);
-
-  double temperature = NTC_resistance_to_temperature(NTC_resistance);
-  printf("Temperature in Celsius: %lf C\r\n", temperature);
-
-  printf("\r\n");
-}
-#elif defined(USE_ZIGBEE_EVENT)
-static void temperature_polling_event_handler(sl_zigbee_event_t *event){
-  uint32_t raw_iadc = IADC_read_raw();
-  printf("Raw IADC: %lu\r\n", raw_iadc);
-
-  double milivolts = IADC_read_milivolts();
-  printf("Milivolts: %lf\r\n", milivolts);
-
-  double NTC_resistance = NTC_milivoltage_to_resistance(milivolts);
-  printf("NTC Resistance in Ohms: %lf\r\n", NTC_resistance);
-
-  double temperature = NTC_resistance_to_temperature(NTC_resistance);
-  printf("Temperature in Celsius: %lf C\r\n", temperature);
-
-  printf("\r\n");
-
-  sl_zigbee_event_set_delay_ms(event, IADC_READ_PERIOD);
-}
-#endif // defined(USE_ZIGBEE_EVENT)
 
 /*******************************************************************************
  **************************   GLOBAL FUNCTIONS   *******************************
@@ -131,22 +76,6 @@ static void temperature_polling_event_handler(sl_zigbee_event_t *event){
 void app_init(void)
 {
   cli_app_init();
-
-
-#ifdef USE_SLEEPTIMER
-  sl_sleeptimer_start_periodic_timer_ms(
-      &timer_temperature_polling,
-      IADC_READ_PERIOD,
-      timer_temperature_polling_callback,
-      NULL,
-      0,
-      SL_SLEEPTIMER_NO_HIGH_PRECISION_HF_CLOCKS_REQUIRED_FLAG
-    );
-#elif defined(USE_ZIGBEE_EVENT)
-  sl_zigbee_event_init(&temperature_polling_event, temperature_polling_event_handler);
-
-  sl_zigbee_event_set_delay_ms(&temperature_polling_event, IADC_READ_PERIOD);
-#endif // defined(USE_ZIGBEE_EVENT)
 }
 
 void app_process_action(void)
