@@ -106,9 +106,39 @@ static const sl_cli_command_info_t cmd__disarm_alarm = \
 
 static const sl_cli_command_info_t cmd__temperature_ramp = \
   SL_CLI_COMMAND(temperature_ramp_cli_callback,
-                 "Simulates a temperature ramp from initial temperature to final temperature during a specified period of time",
+                 "Simulate a temperature ramp from initial temperature to final temperature during a specified period of time",
                  "Initial temperature: temperature in Celsius"SL_CLI_UNIT_SEPARATOR "Final temperature: temperature in Celsius"SL_CLI_UNIT_SEPARATOR "Duration: seconds",
                  { SL_CLI_ARG_INT32, SL_CLI_ARG_INT32, SL_CLI_ARG_UINT32, SL_CLI_ARG_END, });
+
+static const sl_cli_command_info_t cmd__disable_simulation = \
+  SL_CLI_COMMAND(disable_simulation_cli_callback,
+                 "Disable any simulation running",
+                 "Nothing",
+                 { SL_CLI_ARG_END, });
+
+static const sl_cli_command_info_t cmd__set_temperature = \
+  SL_CLI_COMMAND(set_temperature_cli_callback,
+                 "Set a simulated temperature",
+                 "Temperature: temperature in Celsius",
+                 { SL_CLI_ARG_INT32, SL_CLI_ARG_END, });
+
+static const sl_cli_command_info_t cmd__simulated_temperature = \
+  SL_CLI_COMMAND(simulated_temperature_cli_callback,
+                 "Enable or disable simulated temperature",
+                 "Enable: <0|1>",
+                 { SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
+
+static const sl_cli_command_info_t cmd__set_detector_class = \
+  SL_CLI_COMMAND(set_detector_class_cli_callback,
+                 "Set the detector's class",
+                 "Detector class: A1 - 0; A2 - 1; B - 3; ...",
+                 { SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
+
+static const sl_cli_command_info_t cmd__iso_test_simulation = \
+  SL_CLI_COMMAND(iso_test_simulation_cli_callback,
+                 "Simula o ensaio de Temperatura de resposta estática da norma ABNT NBR ISO 7240-5",
+                 "Detector class: A1 - 0; A2 - 1; B - 3; ..."SL_CLI_UNIT_SEPARATOR "K/min: temperature rate (only those specified in the table)",
+                 { SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
 
 static sl_cli_command_entry_t fire_detection_table[] = {
   { "get_temperature", &cmd__get_temperature, false },
@@ -116,6 +146,11 @@ static sl_cli_command_entry_t fire_detection_table[] = {
   { "set_alarm", &cmd__set_alarm, false },
   { "disarm_alarm", &cmd__disarm_alarm, false },
   { "temperature_ramp", &cmd__temperature_ramp, false },
+  { "disable_simulation", &cmd__disable_simulation, false },
+  { "set_temperature", &cmd__set_temperature, false },
+  { "simulated_temperature", &cmd__simulated_temperature, false },
+  { "set_detector_class", &cmd__set_detector_class, false },
+  { "iso_test_simulation", &cmd__iso_test_simulation, false },
 
   { NULL, NULL, false },
 };
@@ -476,6 +511,8 @@ void cli_app_init(void)
   EFM_ASSERT(status);
 
   NTC_init();
+
+  system_state_init();
 
   printf("\r\nStarted CLI Bare-metal\r\n\r\n");
 }

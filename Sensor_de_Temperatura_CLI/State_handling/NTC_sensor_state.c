@@ -1,7 +1,7 @@
 /******************************************************************************
- * File alarm_state.c
+ * File NTC_sensor_state.c
  *
- *  Created on: 23 de jun. de 2026
+ *  Created on: 2 de jul. de 2026
  *      Author: Tassio Lima dos Santos
  *      Email: desenvolvimento20@globalsonic.com.br
  *****************************************************************************/
@@ -12,9 +12,8 @@
  * Includes
  *****************************************************************************/
 
-#include "alarm_state.h"
+#include "NTC_sensor_state.h"
 #include "system_state.h"
-#include "../NTC/fire_alarm.h"
 
 /******************************************************************************
  * Data types
@@ -24,9 +23,13 @@
  * Static Variables
  *****************************************************************************/
 
+static float detector_class_to_tau_LUT[] = {10, 40, 40, 40, 40, 40, 40, 40};
+
 /******************************************************************************
  * Extern
  *****************************************************************************/
+
+extern struct state_variables_singleton state_variables;
 
 /******************************************************************************
  * Private Function Prototypes
@@ -42,39 +45,29 @@
  * Known issues :
  * Note         :
  ******************************************************************************/
-void alarm_state_init (void){
-  state_variables.alarm_state.is_set = false;
-  state_variables.alarm_state.is_triggered = false;
-  state_variables.alarm_state.safe_temperature = 0;
-  state_variables.alarm_state.triggering_temperature = 0;
+void NTC_sensor_state_init (void){
+  set_NTC_sensor_detector_class(DETECTOR_CLASS_A1);
+  state_variables.ntc_state.dt_s = INITIAL_DT_S;
+  state_variables.ntc_state.is_temperature_filtered = true;
+  state_variables.ntc_state.is_temperature_simulated = true;
+  state_variables.ntc_state.simulated_temp = INITIAL_SIMULATED_TEMP;
+  state_variables.ntc_state.temperature_filtered = INITIAL_FILTERED_TEMP;
+
+  state_variables.ntc_state.ramp_info.duration = 0;
+  state_variables.ntc_state.ramp_info.final_temperature = 0;
+  state_variables.ntc_state.ramp_info.initial_temperature = 0;
+  state_variables.ntc_state.ramp_info.step = INITIAL_RAMP_TEMPERATURE_STEP;
+  state_variables.ntc_state.ramp_info.temperature_rate = 0;
 }
 
-void set_alarm_state(bool is_set, int16_t triggering_temperature, int16_t safe_temperature){
-  if(is_set != false && is_set != true) return;
-
-  state_variables.alarm_state.is_set = is_set;
-  state_variables.alarm_state.is_triggered = false;
-  state_variables.alarm_state.triggering_temperature = triggering_temperature;
-  state_variables.alarm_state.safe_temperature = safe_temperature;
+void set_NTC_sensor_detector_class (enum_detector_class_t detector_class){
+  state_variables.ntc_state.detector_class = detector_class;
+  state_variables.ntc_state.tau_s = detector_class_to_tau_LUT[detector_class];
 }
 
-void sync_memory_and_IO_state_alarm(void){
-  struct alarm_state current_alarm_state = state_variables.alarm_state;
 
-  if(current_alarm_state.is_set == true){
-    set_alarm(current_alarm_state.triggering_temperature, current_alarm_state.safe_temperature);
-  }
-  else if(current_alarm_state.is_set == false){
-    disarm_alarm();
-  }
 
-  if(current_alarm_state.is_triggered == true){
-    trigger_alarm();
-  }
-  else if(current_alarm_state.is_triggered == false){
-    turn_off_alarm();
-  }
-}
+
 
 
 

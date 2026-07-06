@@ -68,8 +68,9 @@ struct led_state {
  * Interface Functions
  ******************************************************************************/
 
-void set_led_state(enum led_mode mode, uint16_t data);
-void sync_memory_and_IO_state_led(void);
+void led_state_init               (void);
+void set_led_state                (enum led_mode mode, uint16_t data);
+void sync_memory_and_IO_state_led (void);
 
 /*******************************************************************************
  * END

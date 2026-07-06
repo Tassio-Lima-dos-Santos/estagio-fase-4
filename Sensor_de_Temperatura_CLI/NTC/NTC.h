@@ -25,7 +25,7 @@
  * Includes
  ******************************************************************************/
 
-#include "fire_alarm.h"
+#include "sl_cli_arguments.h"
 
 /*******************************************************************************
  * Macros
@@ -35,13 +35,32 @@
  * Defines
  ******************************************************************************/
 
-#ifdef SOLUCAO_CALCULO
-#define TEMPERATURE_FILTER
-#endif // SOLUCAO_CALCULO
+#define MAX_READABLE_TEMPERATURE      150
+#define MIN_READABLE_TEMPERATURE      -50
+#define MAX_SIMULATION_DURATION       3600 // 1 hora
 
 /*******************************************************************************
  * Typedef & Enums
  ******************************************************************************/
+
+typedef struct {
+  volatile int32_t initial_temperature; // in °C
+  volatile int32_t final_temperature;   // in °C
+  volatile uint32_t duration;           // in seconds
+  volatile uint32_t step;               // in ms
+  volatile float temperature_rate;    // in K/s
+} st_ramp_information_t;
+
+typedef enum {
+  DETECTOR_CLASS_A1 = 0,
+  DETECTOR_CLASS_A2 = 1,
+  DETECTOR_CLASS_B = 2,
+  DETECTOR_CLASS_C = 3,
+  DETECTOR_CLASS_D = 4,
+  DETECTOR_CLASS_E = 5,
+  DETECTOR_CLASS_F = 6,
+  DETECTOR_CLASS_G = 7,
+} enum_detector_class_t;
 
 /*******************************************************************************
  * Private Functions
@@ -51,9 +70,15 @@
  * Interface Functions
  ******************************************************************************/
 
-void NTC_init                       (void);
-float NTC_read_temperature          (void);
-void temperature_ramp_cli_callback  (sl_cli_command_arg_t *arguments);
+void NTC_init                             (void);
+float NTC_read_temperature                (void);
+void start_ramp_simulation                (float initial_temperature, float final_temperature, float duration);
+void stop_ramp_simulation                 (void);
+void temperature_ramp_cli_callback        (sl_cli_command_arg_t *arguments);
+void disable_simulation_cli_callback      (sl_cli_command_arg_t *arguments);
+void set_temperature_cli_callback         (sl_cli_command_arg_t *arguments);
+void simulated_temperature_cli_callback   (sl_cli_command_arg_t *arguments);
+void set_detector_class_cli_callback      (sl_cli_command_arg_t *arguments);
 
 /*******************************************************************************
  * END

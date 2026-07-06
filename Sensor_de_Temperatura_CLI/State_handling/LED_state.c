@@ -42,6 +42,13 @@
  * Known issues :
  * Note         :
  ******************************************************************************/
+void led_state_init(void){
+  state_variables.led_state.mode = LED_IDLE;
+  state_variables.led_state.brightness = 0;
+  state_variables.led_state.period = 0;
+  state_variables.led_state.set = 0;
+}
+
 void set_led_state(enum led_mode mode, uint16_t data){
   switch (mode) {
     case LED_IDLE:

@@ -47,6 +47,12 @@ void sync_memory_and_IO_state();
  * Known issues :
  * Note         :
  ******************************************************************************/
+void system_state_init(void){
+  led_state_init();
+  alarm_state_init();
+  NTC_sensor_state_init();
+}
+
 void save_cli_callback(sl_cli_command_arg_t *arguments){
   (void) arguments;
 

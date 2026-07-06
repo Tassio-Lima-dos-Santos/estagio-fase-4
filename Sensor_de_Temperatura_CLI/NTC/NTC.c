@@ -13,6 +13,8 @@
  *****************************************************************************/
 
 #include "NTC.h"
+#include "../State_handling/NTC_sensor_state.h"
+#include "../State_handling/system_state.h"
 #include "IADC.h"
 #include "sl_cli.h"
 #include "sl_cli_instances.h"
@@ -36,15 +38,6 @@
 #define VDD 3000 // 3000 mV
 #define R_FIXO 10000 // 10 k ohm
 
-#ifdef TEMPERATURE_FILTER
-// Filtro IIR de primeira ordem — equivale ao modelo térmico τ·dθ/dt + θ = T_ar
-// tau_s = constante de tempo em segundos (ex: 20 s para A1)
-// dt_s  = período de amostragem em segundos
-#define TEMPERATURE_POLLING_PERIOD 4000 // 1000 ms between each polling
-#define TAU_S   20.0f
-#define DT_S    (TEMPERATURE_POLLING_PERIOD / 1000.0f)
-#endif // TEMPERATURE_FILTER
-
 /******************************************************************************
  * Data types
  *****************************************************************************/
@@ -61,33 +54,18 @@ typedef struct {
 static const st_ntc_temp_t stNtcTempTable[] = GS_NTC_TEMP;
 
 // Low-pass filter related variables
-#ifdef TEMPERATURE_FILTER
 static sl_zigbee_event_t filtered_temperature_polling_event;
-static volatile float temperature_filtered = 25.0f;  // initiates at room temperature
-#endif // TEMPERATURE_FILTER
-
-// Temperature simulation variables
-static bool is_temperature_simulated = false;
-static volatile float simulated_temp = 25.0f;
 
 // Temperature ramp variables
 static sl_zigbee_event_t ramp_simulation_step_event;
-typedef struct ramp_information {
-  volatile int32_t initial_temperature; // in °C
-  volatile int32_t final_temperature;   // in °C
-  volatile uint32_t duration;           // in seconds
-  volatile uint32_t step;               // in ms
-  volatile float temperature_rate;    // in K/s
-} ramp_information_t;
-
-static ramp_information_t ramp_info = {
-  .step = 1000
-};
 
 
 /******************************************************************************
  * Extern
  *****************************************************************************/
+
+extern struct state_variables_singleton state_variables;
+static struct ntc_sensor_state *NTC_state = &(state_variables.ntc_state);
 
 /******************************************************************************
  * Private Function Prototypes
@@ -98,9 +76,8 @@ static float NTC_resistance_to_temperature(float resistance);
 static float NTC_milivoltage_to_temperature(float milivolts);
 static float NTC_read_raw_temperature(void);
 
-#ifdef TEMPERATURE_FILTER
+
 static void filtered_temperature_polling_event_handler(sl_zigbee_event_t *event);
-#endif // TEMPERATURE_FILTER
 
 static void ramp_simulation_step_event_handler(sl_zigbee_event_t *event);
 
@@ -117,10 +94,8 @@ static void ramp_simulation_step_event_handler(sl_zigbee_event_t *event);
 void NTC_init(void){
   IADC_NTC_init();
 
-#ifdef TEMPERATURE_FILTER
   sl_zigbee_event_init(&filtered_temperature_polling_event, filtered_temperature_polling_event_handler);
-  sl_zigbee_event_set_delay_ms(&filtered_temperature_polling_event, TEMPERATURE_POLLING_PERIOD);
-#endif
+  sl_zigbee_event_set_delay_ms(&filtered_temperature_polling_event, (NTC_state->dt_s * 1000));
 }
 
 static float NTC_milivoltage_to_resistance(float milivolts_NTC){
@@ -167,8 +142,8 @@ static float NTC_milivoltage_to_temperature(float milivolts){
 static float NTC_read_raw_temperature(void){
   float temperature;
 
-  if(is_temperature_simulated){
-    temperature = simulated_temp;
+  if(NTC_state->is_temperature_simulated){
+    temperature = NTC_state->simulated_temp;
   }
   else{
     float milivolts = IADC_read_milivolts();
@@ -179,11 +154,19 @@ static float NTC_read_raw_temperature(void){
 }
 
 float NTC_read_temperature(void){
-#ifndef TEMPERATURE_FILTER
-  return (NTC_read_raw_temperature());
-#else // ifdef TEMPERATURE_FILTER
-  return (temperature_filtered);
-#endif
+  float return_value;
+
+  if(NTC_state->is_temperature_filtered){
+    return_value = (NTC_state->temperature_filtered);
+  }
+  else{
+    return_value = (NTC_read_raw_temperature());
+  }
+
+  if(return_value < MIN_READABLE_TEMPERATURE) return_value = MIN_READABLE_TEMPERATURE;
+  if(return_value > MAX_READABLE_TEMPERATURE) return_value = MAX_READABLE_TEMPERATURE;
+
+  return (return_value);
 }
 
 static float map(float value, float in_min, float in_max, float out_min, float out_max) {
@@ -191,52 +174,121 @@ static float map(float value, float in_min, float in_max, float out_min, float o
   return (result);
 }
 
-#ifdef TEMPERATURE_FILTER
 static void filtered_temperature_polling_event_handler(sl_zigbee_event_t *event){
-  float k = DT_S / (TAU_S + DT_S);  // coeficiente do filtro
+  float k = NTC_state->dt_s / (NTC_state->tau_s + NTC_state->dt_s);  // coeficiente do filtro
   float temp_raw = NTC_read_raw_temperature();
 
-  temperature_filtered = k * temp_raw + (1.0f - k) * temperature_filtered;
+  NTC_state->temperature_filtered = k * temp_raw + (1.0f - k) * NTC_state->temperature_filtered;
 
-  sl_zigbee_event_set_delay_ms(event, TEMPERATURE_POLLING_PERIOD);
+  sl_zigbee_event_set_delay_ms(event, (NTC_state->dt_s * 1000));
 }
-#endif // TEMPERATURE_FILTER
 
-void temperature_ramp_cli_callback  (sl_cli_command_arg_t *arguments){
+void temperature_ramp_cli_callback(sl_cli_command_arg_t *arguments){
   int32_t initial_temperature = sl_cli_get_argument_int32(arguments, 0);
   int32_t final_temperature = sl_cli_get_argument_int32(arguments, 1);
   uint32_t duration = sl_cli_get_argument_uint32(arguments, 2);
 
-  ramp_info.initial_temperature = initial_temperature;
-  ramp_info.final_temperature = final_temperature;
-  ramp_info.duration = duration;
-  ramp_info.temperature_rate = (float) (final_temperature - initial_temperature) / (float) duration;
+  bool is_initial_temperature_valid = (initial_temperature > MIN_READABLE_TEMPERATURE && initial_temperature < MAX_READABLE_TEMPERATURE);
+  bool is_final_temperature_valid = (final_temperature > MIN_READABLE_TEMPERATURE && final_temperature < MAX_READABLE_TEMPERATURE);
+  bool is_duration_valid = (duration < MAX_SIMULATION_DURATION);
 
-  is_temperature_simulated = true;
-  simulated_temp = ramp_info.initial_temperature;
-
-  sl_zigbee_event_init(&ramp_simulation_step_event, ramp_simulation_step_event_handler);
-
-  sl_zigbee_event_set_delay_ms(&ramp_simulation_step_event, ramp_info.step);
-}
-
-static void ramp_simulation_step_event_handler(sl_zigbee_event_t *event){
-  bool finish_condition;
-  if(ramp_info.temperature_rate > 0) finish_condition = (simulated_temp >= ramp_info.final_temperature);
-  else finish_condition = (simulated_temp <= ramp_info.final_temperature);
-
-  if(finish_condition){
-    printf("Ramp simulation finished!\r\nFinal temperature: %f", simulated_temp);
-    is_temperature_simulated = false;
+  if(!(is_initial_temperature_valid && is_final_temperature_valid && is_duration_valid)){
+    printf("Invalid arguments!\r\n");
     return;
   }
 
-  simulated_temp += ramp_info.temperature_rate * (ramp_info.step / 1000.0f); // K/s * ms / 1000
+  start_ramp_simulation(initial_temperature, final_temperature, duration);
+  printf("Ramp simulation started!\r\n");
+}
 
-  sl_zigbee_event_set_delay_ms(event, ramp_info.step);
+void disable_simulation_cli_callback(sl_cli_command_arg_t *arguments){
+  stop_ramp_simulation();
+
+  NTC_state->is_temperature_simulated = false;
+}
+
+void set_temperature_cli_callback(sl_cli_command_arg_t *arguments){
+  int32_t set_temperature = sl_cli_get_argument_int32(arguments, 0);
+
+  NTC_state->is_temperature_simulated = true;
+  NTC_state->simulated_temp = set_temperature;
+
+  printf("Temperature set to %ld C\r\n", set_temperature);
+}
+
+void simulated_temperature_cli_callback(sl_cli_command_arg_t *arguments){
+  uint8_t enable = sl_cli_get_argument_uint8(arguments, 0);
+
+  if(enable == 1){
+    NTC_state->is_temperature_simulated = true;
+    printf("Temperature simulation enabled!\r\n");
+  }
+  else if(enable == 0){
+    NTC_state->is_temperature_simulated = false;
+    printf("Temperature simulation disabled!\r\n");
+  }
+  else{
+    printf("Incorrect argument - enable: <0|1>\r\n");
+  }
+}
+
+void set_detector_class_cli_callback(sl_cli_command_arg_t *arguments){
+  uint8_t detector_class_int = sl_cli_get_argument_uint8(arguments, 0);
+
+  if(detector_class_int > 7){
+    printf("Invalid detector class\r\n");
+    return;
+  }
+
+  enum_detector_class_t detector_class = (enum_detector_class_t) detector_class_int;
+  set_NTC_sensor_detector_class(detector_class);
+
+  printf("Detector class set successfully!\r\n");
 }
 
 
+
+static void ramp_simulation_step_event_handler(sl_zigbee_event_t *event){
+  bool finish_condition;
+  st_ramp_information_t *ramp_info = &(NTC_state->ramp_info);
+
+  if(ramp_info->temperature_rate > 0) finish_condition = (NTC_state->simulated_temp >= ramp_info->final_temperature);
+  else finish_condition = (NTC_state->simulated_temp <= ramp_info->final_temperature);
+
+  if(finish_condition){
+    printf("Ramp simulation finished!\r\nFinal temperature: %.1f\r\n", NTC_state->simulated_temp);
+    return;
+  }
+
+  printf("Temperature simulated: %.1f\r\n", NTC_state->simulated_temp);
+
+  NTC_state->simulated_temp += ramp_info->temperature_rate * (ramp_info->step / 1000.0f); // K/s * ms / 1000
+
+  sl_zigbee_event_set_delay_ms(event, ramp_info->step);
+}
+
+void start_ramp_simulation(float initial_temperature, float final_temperature, float duration){
+  stop_ramp_simulation();
+
+  st_ramp_information_t *ramp_info = &(NTC_state->ramp_info);
+  ramp_info->initial_temperature = initial_temperature;
+  ramp_info->final_temperature = final_temperature;
+  ramp_info->duration = duration;
+  ramp_info->temperature_rate = (float) (final_temperature - initial_temperature) / (float) duration;
+
+  NTC_state->is_temperature_simulated = true;
+  NTC_state->simulated_temp = ramp_info->initial_temperature;
+
+  sl_zigbee_event_init(&ramp_simulation_step_event, ramp_simulation_step_event_handler);
+
+  sl_zigbee_event_set_delay_ms(&ramp_simulation_step_event, ramp_info->step);
+}
+
+void stop_ramp_simulation(void){
+  if(sl_zigbee_event_is_scheduled(&ramp_simulation_step_event)){
+    sl_zigbee_event_set_inactive(&ramp_simulation_step_event);
+  }
+}
 
 
 

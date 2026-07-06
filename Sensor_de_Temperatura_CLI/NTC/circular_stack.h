@@ -1,7 +1,7 @@
 /******************************************************************************
- * File alarm_state.h
+ * File circular_stack.h
  *
- *  Created on: 23 de jun. de 2026
+ *  Created on: 6 de jul. de 2026
  *      Author: Tassio Lima dos Santos
  *      Email: desenvolvimento20@globalsonic.com.br
  *****************************************************************************/
@@ -18,14 +18,15 @@
 /******************************************************************************
  * Multiple include protection
  *****************************************************************************/
-#ifndef STATE_HANDLING_ALARM_STATE_H_
-#define STATE_HANDLING_ALARM_STATE_H_
+#ifndef NTC_CIRCULAR_STACK_H_
+#define NTC_CIRCULAR_STACK_H_
+
+
 
 /*******************************************************************************
  * Includes
  ******************************************************************************/
 
-#include <stdbool.h>
 #include <stdint.h>
 
 /*******************************************************************************
@@ -36,16 +37,18 @@
  * Defines
  ******************************************************************************/
 
+#define CIRCULAR_STACK_SIZE 29
+
 /*******************************************************************************
  * Typedef & Enums
  ******************************************************************************/
 
-struct alarm_state {
-  int16_t   triggering_temperature;
-  int16_t   safe_temperature;
-  bool      is_set;
-  bool      is_triggered;
-};
+typedef struct {
+  float array[CIRCULAR_STACK_SIZE];
+  uint8_t head;
+  uint8_t tail;
+  uint8_t size;
+} st_circular_stack_t;
 
 /*******************************************************************************
  * Externs
@@ -55,12 +58,12 @@ struct alarm_state {
  * Interface Functions
  ******************************************************************************/
 
-void alarm_state_init (void);
-void set_alarm_state(bool is_set, int16_t triggering_temperature, int16_t safe_temperature);
-void sync_memory_and_IO_state_alarm(void);
+float circular_stack_pop(st_circular_stack_t *self);
+float circular_stack_peek(st_circular_stack_t *self, int position);
+void circular_stack_push(st_circular_stack_t *self, float data);
 
 /*******************************************************************************
  * END
  ******************************************************************************/
 
-#endif /* STATE_HANDLING_ALARM_STATE_H_ */
+#endif /* NTC_CIRCULAR_STACK_H_ */

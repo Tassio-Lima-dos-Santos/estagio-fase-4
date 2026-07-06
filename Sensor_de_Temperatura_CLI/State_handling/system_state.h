@@ -29,6 +29,7 @@
 
 #include "LED_state.h"
 #include "alarm_state.h"
+#include "NTC_sensor_state.h"
 
 /*******************************************************************************
  * Macros
@@ -45,6 +46,7 @@
 struct state_variables_singleton {
   struct led_state led_state;
   struct alarm_state alarm_state;
+  struct ntc_sensor_state ntc_state;
 };
 
 /*******************************************************************************
@@ -57,6 +59,7 @@ extern struct state_variables_singleton state_variables;
  * Interface Functions
  ******************************************************************************/
 
+void system_state_init        (void);
 void save_cli_callback        (sl_cli_command_arg_t *arguments);
 void erase_cli_callback       (sl_cli_command_arg_t *arguments);
 void load_cli_callback        (sl_cli_command_arg_t *arguments);

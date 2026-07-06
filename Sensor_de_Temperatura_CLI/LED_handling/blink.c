@@ -92,9 +92,10 @@ uint8_t start_blink(uint16_t period){
                                               0,
                                               SL_SLEEPTIMER_NO_HIGH_PRECISION_HF_CLOCKS_REQUIRED_FLAG);
 #elif defined(USE_ZIGBEE_EVENT)
-  sl_zigbee_event_init(&blink_event, blink_event_handler);
   // Caso o timer já tiver sido iniciado
   if(sl_zigbee_event_is_scheduled(&blink_event)) stop_blink();
+
+  sl_zigbee_event_init(&blink_event, blink_event_handler);
 
   set_led_state(LED_BLINK, period);
 
@@ -119,7 +120,7 @@ uint8_t stop_blink(void){
 #ifdef USE_SLEEPTIMER
   sl_sleeptimer_stop_timer(&timer_blink);
 #elif defined(USE_ZIGBEE_EVENT)
-  sl_zigbee_event_set_inactive(&blink_event);
+  if(sl_zigbee_event_is_scheduled(&blink_event)) sl_zigbee_event_set_inactive(&blink_event);
 #endif // defined(USE_ZIGBEE_EVENT)
 
   sl_led_sinalizacao.turn_off(sl_led_sinalizacao.context);
