@@ -104,6 +104,12 @@ static const sl_cli_command_info_t cmd__disarm_alarm = \
                  "Nothing",
                  { SL_CLI_ARG_END, });
 
+static const sl_cli_command_info_t cmd__show_average_temp_rates = \
+  SL_CLI_COMMAND(show_average_temp_rates_cli_callback,
+                 "Show the average temperature rates",
+                 "Nothing",
+                 { SL_CLI_ARG_END, });
+
 static const sl_cli_command_info_t cmd__temperature_ramp = \
   SL_CLI_COMMAND(temperature_ramp_cli_callback,
                  "Simulate a temperature ramp from initial temperature to final temperature during a specified period of time",
@@ -128,6 +134,12 @@ static const sl_cli_command_info_t cmd__simulated_temperature = \
                  "Enable: <0|1>",
                  { SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
 
+static const sl_cli_command_info_t cmd__filtered_temperature = \
+  SL_CLI_COMMAND(filtered_temperature_cli_callback,
+                 "Enable or disable filtered temperature",
+                 "Enable: <0|1>",
+                 { SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
+
 static const sl_cli_command_info_t cmd__set_detector_class = \
   SL_CLI_COMMAND(set_detector_class_cli_callback,
                  "Set the detector's class",
@@ -145,10 +157,12 @@ static sl_cli_command_entry_t fire_detection_table[] = {
   { "loop_temperature", &cmd__loop_temperature, false },
   { "set_alarm", &cmd__set_alarm, false },
   { "disarm_alarm", &cmd__disarm_alarm, false },
+  { "show_average_temp_rates", &cmd__show_average_temp_rates, false },
   { "temperature_ramp", &cmd__temperature_ramp, false },
   { "disable_simulation", &cmd__disable_simulation, false },
   { "set_temperature", &cmd__set_temperature, false },
   { "simulated_temperature", &cmd__simulated_temperature, false },
+  { "filtered_temperature", &cmd__filtered_temperature, false },
   { "set_detector_class", &cmd__set_detector_class, false },
   { "iso_test_simulation", &cmd__iso_test_simulation, false },
 

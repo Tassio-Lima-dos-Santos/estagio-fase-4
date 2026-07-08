@@ -38,35 +38,32 @@
  *****************************************************************************/
 
 static sl_zigbee_event_t temperature_verification_event;
-static uint16_t global_temperature_verification_period;
 
 static sl_zigbee_event_t loop_temperature_event;
-static uint16_t global_loop_temperature_period;
 
 // Array used for saving the data of triggering and safe temperature of a set alarm
 static float temperature_data[2] = {0};
 
-static float detector_class_to_min_response_temp_LUT[] = {54, 54, 69, 84, 99, 114, 129, 144};
-static float detector_class_to_max_response_temp_LUT[] = {65, 70, 85, 100, 115, 130, 145, 160};
-static float detector_class_to_typical_temp_LUT[] = {25, 25, 40, 55, 70, 85, 100, 115};
+static const float detector_class_to_min_response_temp_LUT[] = {54, 54, 69, 84, 99, 114, 129, 144};
+//static const float detector_class_to_max_response_temp_LUT[] = {65, 70, 85, 100, 115, 130, 145, 160};
+static const float detector_class_to_typical_temp_LUT[] = {25, 25, 40, 55, 70, 85, 100, 115};
+static const float temperature_rate_LUT[] = {1, 3, 5, 10, 20, 30};
 
-static int limite_inferior_resposta_LUT[] = {29, 8, 5, 1, 1, 1}; // Minutos de tempo de resposta com base na razão de elevação
+static const int minimum_response_time_LUT[] = {1, 1, 1, 5, 8, 29}; // Minutos de tempo de resposta com base na razão de elevação
+static float average_temperature_rate_array[6] = {0};
 
-static st_circular_stack_t last_minutes_measures_stack = {
-    .size = 0,
-    .head = 0,
-    .tail = 0,
+static st_circular_stack_t historical_temperature_rate_stack = {
+  .size = 0,
+  .head = 0,
+  .tail = 0,
 };
 
-static st_circular_stack_t temperature_rate_stack = {
-    .size = 0,
-    .head = 0,
-    .tail = 0,
-};
+static float current_temperature;
+static float current_temperature_rate;
+static int   temperature_rate_count = 0;
 
-
-static volatile uint32_t iso_test_begin_timestamp = 0;
-static volatile uint32_t iso_test_final_timestamp = 0;
+static uint32_t iso_test_begin_timestamp = 0;
+static uint32_t iso_test_final_timestamp = 0;
 
 /******************************************************************************
  * Extern
@@ -80,6 +77,8 @@ static struct ntc_sensor_state *NTC_state = &(state_variables.ntc_state);
 
 static void loop_temperature_event_handler(sl_zigbee_event_t *event);
 static void temperature_verification_event_handler(sl_zigbee_event_t *event);
+
+static void update_average_temperature_rate_array(st_circular_stack_t *temperature_rate_stack);
 
 /*******************************************************************************
  * Function name:
@@ -113,9 +112,7 @@ void loop_temperature_cli_callback (sl_cli_command_arg_t *arguments){
 
     sl_zigbee_event_init(&loop_temperature_event, loop_temperature_event_handler);
 
-    global_loop_temperature_period = TEMPERATURE_VERIFICATION_PERIOD;
-
-    sl_zigbee_event_set_delay_ms(&loop_temperature_event, global_loop_temperature_period);
+    sl_zigbee_event_set_delay_ms(&loop_temperature_event, TEMPERATURE_VERIFICATION_PERIOD);
   }
   else if(enable == 0){
     sl_zigbee_event_set_inactive(&loop_temperature_event);
@@ -140,6 +137,13 @@ void disarm_alarm_cli_callback (sl_cli_command_arg_t *arguments){
   disarm_alarm();
 
   printf("Alarm is disarmed!\r\n");
+}
+
+void show_average_temp_rates_cli_callback(sl_cli_command_arg_t *arguments){
+  int array_size = sizeof(average_temperature_rate_array) / sizeof(average_temperature_rate_array[0]);
+  for(int i = 2; i < array_size; i++){
+    printf("Average temperature rate in the last %d minutes: %.2f K/min\r\n", minimum_response_time_LUT[i], average_temperature_rate_array[i]);
+  }
 }
 
 void iso_test_simulation_cli_callback (sl_cli_command_arg_t *arguments){
@@ -193,7 +197,7 @@ void iso_test_simulation_cli_callback (sl_cli_command_arg_t *arguments){
 
   iso_test_begin_timestamp = sl_sleeptimer_get_tick_count();
 
-  start_ramp_simulation(detector_class_to_typical_temp_LUT[detector_class], detector_class_to_max_response_temp_LUT[detector_class], duration);
+  start_ramp_simulation(detector_class_to_typical_temp_LUT[detector_class], temperature_rate / 60.0f, duration);
 }
 
 void set_alarm (int32_t triggering_temperature, int32_t safe_temperature){
@@ -208,14 +212,15 @@ void set_alarm (int32_t triggering_temperature, int32_t safe_temperature){
 
   sl_zigbee_event_init(&temperature_verification_event, temperature_verification_event_handler);
 
-  global_temperature_verification_period = TEMPERATURE_VERIFICATION_PERIOD;
-
-  sl_zigbee_event_set_delay_ms(&temperature_verification_event, global_temperature_verification_period);
+  sl_zigbee_event_set_delay_ms(&temperature_verification_event, TEMPERATURE_VERIFICATION_PERIOD);
 }
 
 void disarm_alarm (void){
   turn_off_alarm();
 
+  temperature_rate_count = 0;
+  memset(average_temperature_rate_array, 0, sizeof(average_temperature_rate_array));
+  circular_stack_clear(&historical_temperature_rate_stack);
   sl_zigbee_event_set_inactive(&temperature_verification_event);
 
   set_alarm_state(false, 0, 0);
@@ -226,7 +231,7 @@ static void loop_temperature_event_handler(sl_zigbee_event_t *event){
 
   printf("\r\nCurrent temperature: %.1lf C\r\n", temperature);
 
-  sl_zigbee_event_set_delay_ms(event, global_loop_temperature_period);
+  sl_zigbee_event_set_delay_ms(event, TEMPERATURE_VERIFICATION_PERIOD);
 }
 
 static void temperature_verification_event_handler(sl_zigbee_event_t *event){
@@ -235,25 +240,36 @@ static void temperature_verification_event_handler(sl_zigbee_event_t *event){
 
   if( (triggering_temperature <= safe_temperature) || (safe_temperature < MIN_SAFE_TEMPERATURE) || (triggering_temperature > MAX_TRIGGERING_TEMPERATURE) ) return;
 
-  float current_temperature = NTC_read_temperature();
+  float previous_temperature = current_temperature;
+  current_temperature = NTC_read_temperature();
 
-#ifndef ALARM_TEMP_C
+  // TEMPERATURE_VERIFICATION_PERIOD está em ms e precisa ser convertido para minuto
+  current_temperature_rate = 60 * (current_temperature - previous_temperature) / (TEMPERATURE_VERIFICATION_PERIOD / 1000);
+  temperature_rate_count += (TEMPERATURE_VERIFICATION_PERIOD / 1000);
+  // A cada 1 minuto atualiza o array de average_temperature_rate
+  if(temperature_rate_count >= 60){
+    temperature_rate_count = 0;
+    circular_stack_push(&historical_temperature_rate_stack, current_temperature_rate);
+    update_average_temperature_rate_array(&historical_temperature_rate_stack);
+  }
 
   if (current_temperature >= triggering_temperature) {
     trigger_alarm();
-  } else if (current_temperature <= safe_temperature) {
-    turn_off_alarm();
   }
 
-#else // if def(ALARM_TEMP_C)
+  for(int i = 5; i >= 0; i--){
+    if( current_temperature_rate > (temperature_rate_LUT[i] - 0.5) ){
+      // Se tem menos samples que o mínimo, pula a verificação
+      if(historical_temperature_rate_stack.size < minimum_response_time_LUT[5 - i]) continue;
 
-  if (temp >= ALARM_TEMP_C) {
-    trigger_alarm();
+      if( average_temperature_rate_array[5 - i] > (temperature_rate_LUT[i] - 0.5) ){
+        trigger_alarm();
+        break;
+      }
+    }
   }
 
-#endif
-
-  sl_zigbee_event_set_delay_ms(event, global_temperature_verification_period);
+  sl_zigbee_event_set_delay_ms(event, TEMPERATURE_VERIFICATION_PERIOD);
 }
 
 void trigger_alarm (void){
@@ -269,7 +285,7 @@ void trigger_alarm (void){
     uint32_t freq = sl_sleeptimer_get_timer_frequency();
     float duration = (iso_test_final_timestamp - iso_test_begin_timestamp) / freq;
 
-    printf("Response time: %f\r\n", duration);
+    printf("Response time: %.0f s\r\n", duration);
 
     iso_test_begin_timestamp = 0;
     iso_test_final_timestamp = 0;
@@ -284,6 +300,31 @@ void turn_off_alarm (void){
   printf("Safe temperature reached! Alarm turned off.\r\n");
   stop_blink();
 }
+
+static void update_average_temperature_rate_array(st_circular_stack_t *temperature_rate_stack){
+  int array_size = sizeof(average_temperature_rate_array) / sizeof(average_temperature_rate_array[0]);
+  for(int i = 0; i < array_size; i++){
+    int sample_quantity = minimum_response_time_LUT[i];
+    float new_sample = circular_stack_peek(temperature_rate_stack, 0);
+    float old_sample = circular_stack_peek(temperature_rate_stack, sample_quantity);
+
+    average_temperature_rate_array[i] += (new_sample / sample_quantity) - (old_sample / sample_quantity);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

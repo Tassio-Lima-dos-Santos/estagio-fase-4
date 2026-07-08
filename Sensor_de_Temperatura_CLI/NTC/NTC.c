@@ -197,7 +197,9 @@ void temperature_ramp_cli_callback(sl_cli_command_arg_t *arguments){
     return;
   }
 
-  start_ramp_simulation(initial_temperature, final_temperature, duration);
+  float temperature_rate = (float) (final_temperature - initial_temperature) / duration;
+
+  start_ramp_simulation(initial_temperature, temperature_rate, duration);
   printf("Ramp simulation started!\r\n");
 }
 
@@ -232,6 +234,22 @@ void simulated_temperature_cli_callback(sl_cli_command_arg_t *arguments){
   }
 }
 
+void filtered_temperature_cli_callback(sl_cli_command_arg_t *arguments){
+  uint8_t enable = sl_cli_get_argument_uint8(arguments, 0);
+
+  if(enable == 1){
+    NTC_state->is_temperature_filtered = true;
+    printf("Temperature filtration enabled!\r\n");
+  }
+  else if(enable == 0){
+    NTC_state->is_temperature_filtered = false;
+    printf("Temperature filtration disabled!\r\n");
+  }
+  else{
+    printf("Incorrect argument - enable: <0|1>\r\n");
+  }
+}
+
 void set_detector_class_cli_callback(sl_cli_command_arg_t *arguments){
   uint8_t detector_class_int = sl_cli_get_argument_uint8(arguments, 0);
 
@@ -260,21 +278,22 @@ static void ramp_simulation_step_event_handler(sl_zigbee_event_t *event){
     return;
   }
 
-  printf("Temperature simulated: %.1f\r\n", NTC_state->simulated_temp);
+  printf("Temperature simulated: %.1f C\r\n", NTC_state->simulated_temp);
 
   NTC_state->simulated_temp += ramp_info->temperature_rate * (ramp_info->step / 1000.0f); // K/s * ms / 1000
 
   sl_zigbee_event_set_delay_ms(event, ramp_info->step);
 }
 
-void start_ramp_simulation(float initial_temperature, float final_temperature, float duration){
+// Temperature rate in K/s and duration in s
+void start_ramp_simulation(float initial_temperature, float temperature_rate, float duration){
   stop_ramp_simulation();
 
   st_ramp_information_t *ramp_info = &(NTC_state->ramp_info);
   ramp_info->initial_temperature = initial_temperature;
-  ramp_info->final_temperature = final_temperature;
+  ramp_info->final_temperature = temperature_rate * duration + initial_temperature;
   ramp_info->duration = duration;
-  ramp_info->temperature_rate = (float) (final_temperature - initial_temperature) / (float) duration;
+  ramp_info->temperature_rate = temperature_rate;
 
   NTC_state->is_temperature_simulated = true;
   NTC_state->simulated_temp = ramp_info->initial_temperature;

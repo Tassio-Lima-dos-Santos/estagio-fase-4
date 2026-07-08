@@ -14,6 +14,7 @@
 
 #include "circular_stack.h"
 #include <stdlib.h>
+#include <string.h>
 
 /******************************************************************************
  * Data types
@@ -85,4 +86,13 @@ void circular_stack_push(st_circular_stack_t *self, float data){
   self->head = (self->head + 1) % CIRCULAR_STACK_SIZE;
 
   self->size++;
+}
+
+void circular_stack_clear(st_circular_stack_t *self){
+  if(self == NULL) return;
+
+  self->size = 0;
+  self->head = 0;
+  self->tail = 0;
+  memset(self->array, 0, sizeof(self->array));
 }

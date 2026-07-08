@@ -37,7 +37,7 @@
  * Defines
  ******************************************************************************/
 
-#define CIRCULAR_STACK_SIZE 29
+#define CIRCULAR_STACK_SIZE 30
 
 /*******************************************************************************
  * Typedef & Enums
@@ -61,6 +61,7 @@ typedef struct {
 float circular_stack_pop(st_circular_stack_t *self);
 float circular_stack_peek(st_circular_stack_t *self, int position);
 void circular_stack_push(st_circular_stack_t *self, float data);
+void circular_stack_clear(st_circular_stack_t *self);
 
 /*******************************************************************************
  * END

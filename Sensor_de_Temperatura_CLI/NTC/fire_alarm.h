@@ -37,12 +37,13 @@
  * Defines
  ******************************************************************************/
 
-#define TEMPERATURE_VERIFICATION_PERIOD 4000 // 4000 ms between each verification
-#define MAX_TRIGGERING_TEMPERATURE      MAX_READABLE_TEMPERATURE
-#define MIN_SAFE_TEMPERATURE            MIN_READABLE_TEMPERATURE
-#define ALARM_BLINK_PERIOD              100
-#define TRIGGER_TEMP_PADDING            1    // Padding between the minimal response temp to the actual trigger temp
-#define SAFE_TEMP_PADDING               5    // Padding between the typical temp to the actual safe temp
+#define TEMPERATURE_VERIFICATION_PERIOD         4000 // 4000 ms between each verification
+#define MAX_TRIGGERING_TEMPERATURE              MAX_READABLE_TEMPERATURE
+#define MIN_SAFE_TEMPERATURE                    MIN_READABLE_TEMPERATURE
+#define ALARM_BLINK_PERIOD                      100
+#define TRIGGER_TEMP_PADDING                    1    // Padding between the minimal response temp to the actual trigger temp
+#define SAFE_TEMP_PADDING                       5    // Padding between the typical temp to the actual safe temp
+#define DEFAULT_TEMPERATURE_RATE_SAMPLES        5    // Number of samples used to calculate the temperature rate
 
 /*******************************************************************************
  * Typedef & Enums
@@ -56,15 +57,16 @@
  * Interface Functions
  ******************************************************************************/
 
-void get_temperature_cli_callback     (sl_cli_command_arg_t *arguments);
-void loop_temperature_cli_callback    (sl_cli_command_arg_t *arguments);
-void set_alarm_cli_callback           (sl_cli_command_arg_t *arguments);
-void disarm_alarm_cli_callback        (sl_cli_command_arg_t *arguments);
-void iso_test_simulation_cli_callback (sl_cli_command_arg_t *arguments);
-void set_alarm                        (int32_t triggering_temperature, int32_t safe_temperature);
-void disarm_alarm                     (void);
-void trigger_alarm                    (void);
-void turn_off_alarm                   (void);
+void get_temperature_cli_callback           (sl_cli_command_arg_t *arguments);
+void loop_temperature_cli_callback          (sl_cli_command_arg_t *arguments);
+void set_alarm_cli_callback                 (sl_cli_command_arg_t *arguments);
+void disarm_alarm_cli_callback              (sl_cli_command_arg_t *arguments);
+void show_average_temp_rates_cli_callback   (sl_cli_command_arg_t *arguments);
+void iso_test_simulation_cli_callback       (sl_cli_command_arg_t *arguments);
+void set_alarm                              (int32_t triggering_temperature, int32_t safe_temperature);
+void disarm_alarm                           (void);
+void trigger_alarm                          (void);
+void turn_off_alarm                         (void);
 
 /*******************************************************************************
  * END

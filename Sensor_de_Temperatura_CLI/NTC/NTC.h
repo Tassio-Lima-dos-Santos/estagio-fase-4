@@ -35,8 +35,8 @@
  * Defines
  ******************************************************************************/
 
-#define MAX_READABLE_TEMPERATURE      150
-#define MIN_READABLE_TEMPERATURE      -50
+#define MAX_READABLE_TEMPERATURE      125
+#define MIN_READABLE_TEMPERATURE      -40
 #define MAX_SIMULATION_DURATION       3600 // 1 hora
 
 /*******************************************************************************
@@ -72,12 +72,13 @@ typedef enum {
 
 void NTC_init                             (void);
 float NTC_read_temperature                (void);
-void start_ramp_simulation                (float initial_temperature, float final_temperature, float duration);
+void start_ramp_simulation                (float initial_temperature, float temperature_rate, float duration); // Temperature rate in K/s and duration in s
 void stop_ramp_simulation                 (void);
 void temperature_ramp_cli_callback        (sl_cli_command_arg_t *arguments);
 void disable_simulation_cli_callback      (sl_cli_command_arg_t *arguments);
 void set_temperature_cli_callback         (sl_cli_command_arg_t *arguments);
 void simulated_temperature_cli_callback   (sl_cli_command_arg_t *arguments);
+void filtered_temperature_cli_callback    (sl_cli_command_arg_t *arguments);
 void set_detector_class_cli_callback      (sl_cli_command_arg_t *arguments);
 
 /*******************************************************************************
