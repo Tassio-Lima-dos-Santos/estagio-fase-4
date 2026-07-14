@@ -38,17 +38,25 @@
 #define MAX_READABLE_TEMPERATURE      125
 #define MIN_READABLE_TEMPERATURE      -40
 #define MAX_SIMULATION_DURATION       3600 // 1 hora
+#define STEPS_ARRAY_SIZE              30
 
 /*******************************************************************************
  * Typedef & Enums
  ******************************************************************************/
 
 typedef struct {
-  volatile int32_t initial_temperature; // in °C
-  volatile int32_t final_temperature;   // in °C
-  volatile uint32_t duration;           // in seconds
-  volatile uint32_t step;               // in ms
-  volatile float temperature_rate;    // in K/s
+  int32_t steps_array[STEPS_ARRAY_SIZE];  // in °C
+  uint32_t step_duration;                 // in ms
+  uint8_t current_step;                   // first step is 1, 0 is an uninitialized simulation
+  uint8_t amount_steps;
+} st_steps_information_t;
+
+typedef struct {
+  int32_t initial_temperature; // in °C
+  int32_t final_temperature;   // in °C
+  uint32_t duration;           // in seconds
+  uint32_t step;               // in ms
+  float temperature_rate;      // in K/s
 } st_ramp_information_t;
 
 typedef enum {
@@ -74,7 +82,10 @@ void NTC_init                             (void);
 float NTC_read_temperature                (void);
 void start_ramp_simulation                (float initial_temperature, float temperature_rate, float duration); // Temperature rate in K/s and duration in s
 void stop_ramp_simulation                 (void);
+void start_steps_simulation               (int32_t *steps_array, uint8_t amount_steps, uint32_t step_duration);
+void stop_steps_simulation                (void);
 void temperature_ramp_cli_callback        (sl_cli_command_arg_t *arguments);
+void temperature_steps_cli_callback       (sl_cli_command_arg_t *arguments);
 void disable_simulation_cli_callback      (sl_cli_command_arg_t *arguments);
 void set_temperature_cli_callback         (sl_cli_command_arg_t *arguments);
 void simulated_temperature_cli_callback   (sl_cli_command_arg_t *arguments);

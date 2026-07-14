@@ -28,6 +28,7 @@
  ******************************************************************************/
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /*******************************************************************************
  * Macros
@@ -38,6 +39,7 @@
  ******************************************************************************/
 
 #define CIRCULAR_STACK_SIZE 30
+#define DEFAULT_VALUE 25
 
 /*******************************************************************************
  * Typedef & Enums
@@ -48,6 +50,7 @@ typedef struct {
   uint8_t head;
   uint8_t tail;
   uint8_t size;
+  bool is_initialized;
 } st_circular_stack_t;
 
 /*******************************************************************************
@@ -58,6 +61,7 @@ typedef struct {
  * Interface Functions
  ******************************************************************************/
 
+void circular_stack_init(st_circular_stack_t *self);
 float circular_stack_pop(st_circular_stack_t *self);
 float circular_stack_peek(st_circular_stack_t *self, int position);
 void circular_stack_push(st_circular_stack_t *self, float data);

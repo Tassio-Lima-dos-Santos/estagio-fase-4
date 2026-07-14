@@ -42,9 +42,22 @@
  * Known issues :
  * Note         :
  ******************************************************************************/
+void circular_stack_init(st_circular_stack_t *self){
+  if(self == NULL) return;
+  if(self->is_initialized == true) return;
+
+  self->size = 0;
+  self->head = 0;
+  self->tail = 0;
+  for(int i = 0; i < CIRCULAR_STACK_SIZE; i++){
+    self->array[i] = DEFAULT_VALUE;
+  }
+  self->is_initialized = true;
+}
+
 float circular_stack_pop(st_circular_stack_t *self){
-  if(self == NULL) return 0;
-  if(self->size == 0) return 0;
+  if(self == NULL) return (0);
+  if(self->size == 0) return (DEFAULT_VALUE);
 
   if(self->head == 0){
     self->head = CIRCULAR_STACK_SIZE - 1;
@@ -60,8 +73,8 @@ float circular_stack_pop(st_circular_stack_t *self){
 }
 
 float circular_stack_peek(st_circular_stack_t *self, int position){
-  if(self == NULL) return 0;
-  if(position < 0 || position >= self->size) return 0;
+  if(self == NULL) return (0);
+  if(position < 0 || position >= self->size) return (DEFAULT_VALUE);
 
   int index = self->head - (position + 1);
   if(index < 0){

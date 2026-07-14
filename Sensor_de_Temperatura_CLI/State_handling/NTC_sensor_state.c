@@ -48,10 +48,15 @@ extern struct state_variables_singleton state_variables;
 void NTC_sensor_state_init (void){
   set_NTC_sensor_detector_class(DETECTOR_CLASS_A1);
   state_variables.ntc_state.dt_s = INITIAL_DT_S;
-  state_variables.ntc_state.is_temperature_filtered = true;
+  state_variables.ntc_state.is_temperature_filtered = false;
   state_variables.ntc_state.is_temperature_simulated = true;
   state_variables.ntc_state.simulated_temp = INITIAL_SIMULATED_TEMP;
   state_variables.ntc_state.temperature_filtered = INITIAL_FILTERED_TEMP;
+
+  state_variables.ntc_state.steps_info.amount_steps = 0;
+  state_variables.ntc_state.steps_info.current_step = 0;
+  state_variables.ntc_state.steps_info.step_duration = 0;
+  for(int i = 0; i < STEPS_ARRAY_SIZE; i++) state_variables.ntc_state.steps_info.steps_array[i] = 0;
 
   state_variables.ntc_state.ramp_info.duration = 0;
   state_variables.ntc_state.ramp_info.final_temperature = 0;

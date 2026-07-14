@@ -51,13 +51,13 @@ typedef struct {
  * Static Variables
  *****************************************************************************/
 
+// ------------------------ Look-Up Tables ------------------------
 static const st_ntc_temp_t stNtcTempTable[] = GS_NTC_TEMP;
 
-// Low-pass filter related variables
-static sl_zigbee_event_t filtered_temperature_polling_event;
-
-// Temperature ramp variables
-static sl_zigbee_event_t ramp_simulation_step_event;
+// ------------------------ Events ------------------------
+static sl_zigbee_event_t filtered_temperature_polling_event; // Low-pass filter related variables
+static sl_zigbee_event_t ramp_simulation_step_event; // Temperature ramp variables
+static sl_zigbee_event_t steps_simulation_step_event;
 
 
 /******************************************************************************
@@ -76,10 +76,10 @@ static float NTC_resistance_to_temperature(float resistance);
 static float NTC_milivoltage_to_temperature(float milivolts);
 static float NTC_read_raw_temperature(void);
 
-
+// ------------------------ Event Handlers ------------------------
 static void filtered_temperature_polling_event_handler(sl_zigbee_event_t *event);
-
 static void ramp_simulation_step_event_handler(sl_zigbee_event_t *event);
+static void steps_simulation_step_event_handler(sl_zigbee_event_t *event);
 
 /*******************************************************************************
  * Function name:
@@ -203,6 +203,20 @@ void temperature_ramp_cli_callback(sl_cli_command_arg_t *arguments){
   printf("Ramp simulation started!\r\n");
 }
 
+void temperature_steps_cli_callback(sl_cli_command_arg_t *arguments){
+  uint32_t amount_steps = sl_cli_get_argument_count(arguments) - 1;
+  uint32_t duration = sl_cli_get_argument_uint32(arguments, 0);
+  int32_t steps[amount_steps];
+
+  for(int i = 0; (uint32_t) i < amount_steps; i++){
+    steps[i] = sl_cli_get_argument_int32(arguments, i + 1);
+  }
+
+  // O argumento duration precisa estar em ms
+  start_steps_simulation(steps, amount_steps, duration * 1000);
+  printf("Steps simulation started!\r\n");
+}
+
 void disable_simulation_cli_callback(sl_cli_command_arg_t *arguments){
   stop_ramp_simulation();
 
@@ -264,8 +278,6 @@ void set_detector_class_cli_callback(sl_cli_command_arg_t *arguments){
   printf("Detector class set successfully!\r\n");
 }
 
-
-
 static void ramp_simulation_step_event_handler(sl_zigbee_event_t *event){
   bool finish_condition;
   st_ramp_information_t *ramp_info = &(NTC_state->ramp_info);
@@ -306,6 +318,48 @@ void start_ramp_simulation(float initial_temperature, float temperature_rate, fl
 void stop_ramp_simulation(void){
   if(sl_zigbee_event_is_scheduled(&ramp_simulation_step_event)){
     sl_zigbee_event_set_inactive(&ramp_simulation_step_event);
+  }
+}
+
+static void steps_simulation_step_event_handler(sl_zigbee_event_t *event){
+  bool finish_condition;
+  st_steps_information_t *steps_info = &(NTC_state->steps_info);
+
+  steps_info->current_step++;
+
+  finish_condition = (steps_info->current_step == steps_info->amount_steps);
+
+  NTC_state->simulated_temp = steps_info->steps_array[steps_info->current_step - 1];
+
+  printf("Temperature simulated: %.1f C\r\n", NTC_state->simulated_temp);
+
+  if(finish_condition){
+    printf("Steps simulation finished!\r\nFinal temperature: %.1f\r\n", NTC_state->simulated_temp);
+    return;
+  }
+
+  sl_zigbee_event_set_delay_ms(event, steps_info->step_duration);
+}
+
+void start_steps_simulation(int32_t *steps_array, uint8_t amount_steps, uint32_t step_duration){
+  stop_steps_simulation();
+
+  st_steps_information_t *steps_info = &(NTC_state->steps_info);
+  steps_info->amount_steps = amount_steps;
+  steps_info->step_duration = step_duration;
+  for(int i = 0; i < amount_steps; i++) steps_info->steps_array[i] = steps_array[i];
+
+  NTC_state->is_temperature_simulated = true;
+  NTC_state->simulated_temp = steps_info->steps_array[0];
+
+  sl_zigbee_event_init(&steps_simulation_step_event, steps_simulation_step_event_handler);
+
+  sl_zigbee_event_set_active(&steps_simulation_step_event);
+}
+
+void stop_steps_simulation(void){
+  if(sl_zigbee_event_is_scheduled(&steps_simulation_step_event)){
+    sl_zigbee_event_set_inactive(&steps_simulation_step_event);
   }
 }
 

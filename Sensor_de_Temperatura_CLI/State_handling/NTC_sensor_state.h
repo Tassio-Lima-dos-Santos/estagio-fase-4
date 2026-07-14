@@ -48,6 +48,7 @@
  *******************************************************************************/
 
 struct ntc_sensor_state {
+  st_steps_information_t steps_info;
   st_ramp_information_t ramp_info;
   volatile float simulated_temp;
   volatile float tau_s;               // Low-pass filter's time constant

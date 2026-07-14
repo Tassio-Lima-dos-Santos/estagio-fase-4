@@ -116,6 +116,12 @@ static const sl_cli_command_info_t cmd__temperature_ramp = \
                  "Initial temperature: temperature in Celsius"SL_CLI_UNIT_SEPARATOR "Final temperature: temperature in Celsius"SL_CLI_UNIT_SEPARATOR "Duration: seconds",
                  { SL_CLI_ARG_INT32, SL_CLI_ARG_INT32, SL_CLI_ARG_UINT32, SL_CLI_ARG_END, });
 
+static const sl_cli_command_info_t cmd__temperature_steps = \
+  SL_CLI_COMMAND(temperature_steps_cli_callback,
+                 "Simulate a series of temperature steps, you specify the duration of each step and what temperature is set in each step",
+                 "Duration of the steps: seconds"SL_CLI_UNIT_SEPARATOR "Temperature in each step: temperature in Celsius",
+                 { SL_CLI_ARG_UINT32, SL_CLI_ARG_INT32, SL_CLI_ARG_ADDITIONAL, SL_CLI_ARG_END, });
+
 static const sl_cli_command_info_t cmd__disable_simulation = \
   SL_CLI_COMMAND(disable_simulation_cli_callback,
                  "Disable any simulation running",
@@ -159,6 +165,7 @@ static sl_cli_command_entry_t fire_detection_table[] = {
   { "disarm_alarm", &cmd__disarm_alarm, false },
   { "show_average_temp_rates", &cmd__show_average_temp_rates, false },
   { "temperature_ramp", &cmd__temperature_ramp, false },
+  { "temperature_steps", &cmd__temperature_steps, false },
   { "disable_simulation", &cmd__disable_simulation, false },
   { "set_temperature", &cmd__set_temperature, false },
   { "simulated_temperature", &cmd__simulated_temperature, false },
