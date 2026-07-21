@@ -68,6 +68,10 @@
 #define MCP79410_RTCC_REGISTER_PWRUPDATE_ADDRESS            0x1e
 #define MCP79410_RTCC_REGISTER_PWRUPMTH_ADDRESS             0x1f
 
+// RTCC Registers Address Limits
+#define MCP79410_RTCC_REGISTERS_BEGIN_ADDRESS               MCP79410_RTCC_REGISTER_RTCSEC_ADDRESS
+#define MCP79410_RTCC_REGISTERS_END_ADDRESS                 (MCP79410_RTCC_REGISTER_PWRUPMTH_ADDRESS + 1)
+
 // SRAM Address Limits
 #define MCP79410_SRAM_BEGIN_ADDRESS                         0x20
 #define MCP79410_SRAM_END_ADDRESS                           0x60
@@ -91,7 +95,7 @@
 /*******************************************************************************
  * RTCC Registers Bit Map
  ******************************************************************************/
-/*
+
 enum enum_sec_offset{
   SECONE0_OFFSET = 0,
   SECONE1_OFFSET = 1,
@@ -100,7 +104,7 @@ enum enum_sec_offset{
   SECTEN0_OFFSET = 4,
   SECTEN1_OFFSET = 5,
   SECTEN2_OFFSET = 6,
-  ST_OFFSET = 7,
+  ST_OFFSET = 7, // Must be set to enable the crystal oscillator circuit
 };
 
 enum enum_min_offset{
@@ -124,12 +128,12 @@ enum enum_hour_offset{
 };
 
 enum enum_rtcwkday_offset{
-  WKDAY0_OFFSET = 0,
-  WKDAY1_OFFSET = 1,
-  WKDAY2_OFFSET = 2,
+  RTCWKDAY0_OFFSET = 0,
+  RTCWKDAY1_OFFSET = 1,
+  RTCWKDAY2_OFFSET = 2,
   VBATEN_OFFSET = 3,
   PWRFAIL_OFFSET = 4,
-  OSCRUN_OFFSET = 5,
+  OSCRUN_OFFSET = 5, // Indicates whether the oscillator is running
 };
 
 enum enum_date_offset{
@@ -142,13 +146,47 @@ enum enum_date_offset{
 };
 
 enum enum_month_offset{
-  DATEONE0_OFFSET = 0,
-  DATEONE1_OFFSET = 1,
-  DATEONE2_OFFSET = 2,
-  DATEONE3_OFFSET = 3,
-  DATETEN0_OFFSET = 4,
-  DATETEN1_OFFSET = 5,
+  MTHONE0_OFFSET = 0,
+  MTHONE1_OFFSET = 1,
+  MTHONE2_OFFSET = 2,
+  MTHONE3_OFFSET = 3,
+  MTHTEN0_OFFSET = 4,
+  LPYR_WKDAY0_OFFSET = 5,
+  MTH_WKDAY1_OFFSET = 6,
+  MTH_WKDAY2_OFFSET = 7,
 };
-*/
+
+enum enum_year_offset{
+  YRONE0_OFFSET = 0,
+  YRONE1_OFFSET = 1,
+  YRONE2_OFFSET = 2,
+  YRONE3_OFFSET = 3,
+  YRTEN0_OFFSET = 4,
+  YRTEN1_OFFSET = 5,
+  YRTEN2_OFFSET = 6,
+  YRTEN3_OFFSET = 7,
+};
+
+enum enum_control_offset{
+  SQWFS0_OFFSET = 0,
+  SQWFS1_OFFSET = 1,
+  CRSTRIM_OFFSET = 2,
+  EXTOSC_OFFSET = 3, // Must be set to enable an external clock source
+  ALM0EN_OFFSET = 4,
+  ALM1EN_OFFSET = 5,
+  SQWEN_OFFSET = 6,
+  OUT_OFFSET = 7,
+};
+
+enum enum_osctrim_offset{
+  TRIMVAL0_OFFSET = 0,
+  TRIMVAL1_OFFSET = 1,
+  TRIMVAL2_OFFSET = 2,
+  TRIMVAL3_OFFSET = 3,
+  TRIMVAL4_OFFSET = 4,
+  TRIMVAL5_OFFSET = 5,
+  TRIMVAL6_OFFSET = 6,
+  SIGN_OFFSET = 7,
+};
 
 #endif /* MCP79410_STACK_MCP79410_MEMORY_MAP_H_ */

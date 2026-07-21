@@ -26,6 +26,7 @@ component:
 - {id: MGM210PA32JIA}
 - instance: [example]
   id: cli
+- {id: emlib_i2c}
 - {id: iostream_recommended_stream}
 - instance: [inst]
   id: iostream_usart

@@ -1,7 +1,7 @@
 /******************************************************************************
- * File hal_mcp79410.h
+ * File mcp79410_config.h
  *
- *  Created on: 17 de jul. de 2026
+ *  Created on: 20 de jul. de 2026
  *      Author: Tassio Lima dos Santos
  *      Email: desenvolvimento20@globalsonic.com.br
  *****************************************************************************/
@@ -18,8 +18,8 @@
 /******************************************************************************
  * Multiple include protection
  *****************************************************************************/
-#ifndef MCP79410_STACK_HAL_MCP79410_H_
-#define MCP79410_STACK_HAL_MCP79410_H_
+#ifndef MCP79410_STACK_MCP79410_CONFIG_H_
+#define MCP79410_STACK_MCP79410_CONFIG_H_
 
 
 
@@ -27,8 +27,7 @@
  * Includes
  ******************************************************************************/
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "em_gpio.h"
 
 /*******************************************************************************
  * Macros
@@ -38,23 +37,37 @@
  * Defines
  ******************************************************************************/
 
+#ifndef MCP79410_PERIPHERAL
+#define MCP79410_PERIPHERAL              I2C0
+#endif // MCP79410_PERIPHERAL
+
+// MCP79410 there is no ENABLE on PB01
+//#ifndef MCP79410_ENABLE_PORT
+//#define MCP79410_ENABLE_PORT
+//#endif // MCP79410_ENABLE_PORT
+//#ifndef MCP79410_ENABLE_PIN
+//#define MCP79410_ENABLE_PIN
+//#endif // MCP79410_ENABLE_PIN
+
+// I2C0 SCL on PB01
+#ifndef MCP79410_SCL_PORT
+#define MCP79410_SCL_PORT                gpioPortB
+#endif // MCP79410_SCL_PORT
+#ifndef MCP79410_SCL_PIN
+#define MCP79410_SCL_PIN                 1
+#endif // MCP79410_SCL_PIN
+
+// I2C0 SDA on PB00
+#ifndef MCP79410_SDA_PORT
+#define MCP79410_SDA_PORT                gpioPortB
+#endif // MCP79410_SDA_PORT
+#ifndef MCP79410_SDA_PIN
+#define MCP79410_SDA_PIN                 0
+#endif // MCP79410_SDA_PIN
+
 /*******************************************************************************
  * Typedef & Enums
  ******************************************************************************/
-
-typedef struct {
-  int16_t year;
-  uint16_t ms;
-  uint8_t seconds;
-  uint8_t minutes;
-  uint8_t hours;
-  uint8_t weekday;
-  uint8_t date;
-  uint8_t mounth;
-  bool is_leap_year;
-  bool is_pm;
-  bool is_24hr_mode;
-} st_timedate_t;
 
 /*******************************************************************************
  * Externs
@@ -64,14 +77,8 @@ typedef struct {
  * Interface Functions
  ******************************************************************************/
 
-void MCP79410_init(bool is_there_external_crystal,
-                   bool is_24hr_mode,
-                   bool is_battery_enabled,
-                   st_timedate_t initial_data);
-void set_timedate (st_timedate_t timedate_data);
-
 /*******************************************************************************
  * END
  ******************************************************************************/
 
-#endif /* MCP79410_STACK_HAL_MCP79410_H_ */
+#endif /* MCP79410_STACK_MCP79410_CONFIG_H_ */

@@ -32,8 +32,16 @@
 #define main nodeMain
 #endif
 
+#include "CLI_handling/cli.h"
+#include "MCP79410_stack/hal_mcp79410.h"
+
+static st_timedate_t initial_timedate;
+
 void app_init(void)
 {
+  cli_app_init();
+
+  MCP79410_init(true, false, false, initial_timedate);
 }
 
 void app_process_action(void)
