@@ -50,7 +50,7 @@ typedef struct {
   uint8_t hours;
   uint8_t weekday;
   uint8_t date;
-  uint8_t mounth;
+  uint8_t month;
   bool is_leap_year;
   bool is_pm;
   bool is_24hr_mode;

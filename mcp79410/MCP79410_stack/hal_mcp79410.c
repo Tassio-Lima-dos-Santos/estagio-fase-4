@@ -22,10 +22,22 @@
  * Defines
  *****************************************************************************/
 
-//#define DEBUG
+#define DEBUG
 
 #define MCP79410_SRAM_AND_RTCC_REGISTER_I2C_BUS_ADDRESS     (0b01101111 << 1)           /**< I2C bus address*/
 #define MCP79410_EEPROM_I2C_BUS_ADDRESS                     (0b01010111 << 1)           /**< I2C bus address*/
+
+/******************************************************************************
+ * Macros
+ *****************************************************************************/
+
+#define SET_BIT(byte, bit) ((byte) |= (1U << (bit)))
+#define CLEAR_BIT(byte, bit) ((byte) &= ~(1U << (bit)))
+#define TOGGLE_BIT(byte, bit) ((byte) ^= (1U << (bit)))
+#define CHECK_BIT(byte, bit) (((byte) >> (bit)) & 1U)
+#define CLEAR_BYTE_UPTO_BIT(byte, bit) ((byte) = (((byte) >> (bit)) << (bit)))    // Clear the least significant piece from the byte
+#define CLEAR_BYTE_DOWN_TO_BIT(byte, bit) ((byte) = ((uint8_t) ((byte) << (7 - bit)) >> (7 - bit))) // Clear the most significant piece from the byte
+#define CLEAR_BYTE(byte) ((byte) = 0U)
 
 /******************************************************************************
  * Data types
@@ -86,7 +98,12 @@ static st_mcp79410_registers_t mcp79410_registers;
 
 static I2C_TransferReturn_TypeDef write_to_register   (uint8_t register_address, const uint8_t* data_array, uint16_t data_size);
 static I2C_TransferReturn_TypeDef read_from_register  (uint8_t register_address, uint8_t* read_data, uint16_t* read_data_size);
-static void set_external_crystal                      (bool enable_external_crystal);
+static void set_external_crystal                      (bool enable_external_crystal, st_mcp79410_registers_t *registers);
+static void set_external_clock                        (bool enable_external_clock, st_mcp79410_registers_t *registers);
+static void set_24hr_mode                             (bool enable_24hr_mode, st_mcp79410_registers_t *registers);
+static void set_battery_mode                          (bool enable_battery, st_mcp79410_registers_t *registers);
+static bool is_timedate_valid                         (st_timedate_t timedate_data);
+static void convert_rtc_register_to_timedate (st_timedate_t *timedate_data, const st_mcp79410_registers_t *registers);
 
 /*******************************************************************************
  * Function name: MCP79410_init
@@ -103,6 +120,7 @@ static void set_external_crystal                      (bool enable_external_crys
  * Known issues :
  * Note         :
  ******************************************************************************/
+__attribute__((optimize("O0")))
 void MCP79410_init(bool is_there_external_crystal, bool is_24hr_mode, bool is_battery_enabled, st_timedate_t initial_timedate)
 {
 #if (defined(MCP79410_ENABLE_PORT) && defined(MCP79410_ENABLE_PIN))
@@ -111,15 +129,30 @@ void MCP79410_init(bool is_there_external_crystal, bool is_24hr_mode, bool is_ba
 
   gs_hal_i2c_class()->i2cInit(MCP79410_PERIPHERAL, MCP79410_SCL_PORT, MCP79410_SCL_PIN, MCP79410_SDA_PORT, MCP79410_SDA_PIN);
 
-  set_external_crystal(is_there_external_crystal);
+  if(is_there_external_crystal) set_external_crystal(true, &mcp79410_registers);
+  else set_external_clock(true, &mcp79410_registers);
 
+  set_24hr_mode(is_24hr_mode, &mcp79410_registers);
+
+  set_battery_mode(is_battery_enabled, &mcp79410_registers);
+
+  set_timedate(initial_timedate);
+
+#ifdef DEBUG
+  st_timedate_t convert_test = {0};
+  convert_rtc_register_to_timedate(&convert_test, &mcp79410_registers);
+#endif // DEBUG
+
+#ifdef DEBUG
+  printf("MCP79410 initialized!\r\n");
+#endif // DEBUG
 }
 
 static I2C_TransferReturn_TypeDef write_to_register(uint8_t register_address, const uint8_t* data_array, uint16_t data_size)
 {
-  if(data_array == NULL) return (i2cTransferUsageFault);
+  if(data_array == NULL) return (i2cTransferUsageFault); // @suppress("Symbol is not resolved")
   if(register_address >= MCP79410_RTCC_REGISTERS_END_ADDRESS){
-    return (i2cTransferUsageFault);
+    return (i2cTransferUsageFault); // @suppress("Symbol is not resolved")
   }
 
   uint8_t write_data[data_size + 1];
@@ -137,9 +170,9 @@ static I2C_TransferReturn_TypeDef write_to_register(uint8_t register_address, co
 
 static I2C_TransferReturn_TypeDef read_from_register(uint8_t register_address, uint8_t* read_data, uint16_t* read_data_size)
 {
-  if(read_data == NULL || read_data_size == NULL) return (i2cTransferUsageFault);
+  if(read_data == NULL || read_data_size == NULL) return (i2cTransferUsageFault); // @suppress("Symbol is not resolved")
   if(register_address >= MCP79410_RTCC_REGISTERS_END_ADDRESS){
-    return (i2cTransferUsageFault);
+    return (i2cTransferUsageFault); // @suppress("Symbol is not resolved")
   }
 
   uint16_t write_size = 1;
@@ -153,26 +186,197 @@ static I2C_TransferReturn_TypeDef read_from_register(uint8_t register_address, u
   return (ret);
 }
 
-static void set_external_crystal(bool enable_external_crystal)
+static void set_external_crystal(bool enable_external_crystal, st_mcp79410_registers_t *registers)
 {
   if(enable_external_crystal){
-    mcp79410_registers.timekeeping_registers.rtcsec_data |= (1U << ST_OFFSET);
-    mcp79410_registers.timekeeping_registers.control_data &= ~(1U << EXTOSC_OFFSET);
+    SET_BIT(registers->timekeeping_registers.rtcsec_data, ST_OFFSET);
+    CLEAR_BIT(registers->timekeeping_registers.control_data, EXTOSC_OFFSET);
   }
-  else
-  {
-    mcp79410_registers.timekeeping_registers.rtcsec_data &= ~(1U << ST_OFFSET);
+  else{
+    CLEAR_BIT(registers->timekeeping_registers.rtcsec_data, ST_OFFSET);
+  }
+}
+
+static void set_external_clock(bool enable_external_clock, st_mcp79410_registers_t *registers)
+{
+  if(enable_external_clock){
+    SET_BIT(registers->timekeeping_registers.control_data, EXTOSC_OFFSET);
+    CLEAR_BIT(registers->timekeeping_registers.rtcsec_data, ST_OFFSET);
+  }
+  else{
+    CLEAR_BIT(registers->timekeeping_registers.control_data, EXTOSC_OFFSET);
+  }
+}
+
+static void set_24hr_mode(bool enable_24hr_mode, st_mcp79410_registers_t *registers)
+{
+  if(enable_24hr_mode){
+    CLEAR_BIT(registers->timekeeping_registers.rtchour_data, BIT_12_24_OFFSET);
+    CLEAR_BIT(registers->alarm_registers[0].almhour_data, BIT_12_24_OFFSET);
+    CLEAR_BIT(registers->alarm_registers[1].almhour_data, BIT_12_24_OFFSET);
+    CLEAR_BIT(registers->power_fail_registers.pwrdnhour_data, BIT_12_24_OFFSET);
+    CLEAR_BIT(registers->power_fail_registers.pwruphour_data, BIT_12_24_OFFSET);
+  }
+  else{
+    SET_BIT(registers->timekeeping_registers.rtchour_data, BIT_12_24_OFFSET);
+    SET_BIT(registers->alarm_registers[0].almhour_data, BIT_12_24_OFFSET);
+    SET_BIT(registers->alarm_registers[1].almhour_data, BIT_12_24_OFFSET);
+    SET_BIT(registers->power_fail_registers.pwrdnhour_data, BIT_12_24_OFFSET);
+    SET_BIT(registers->power_fail_registers.pwruphour_data, BIT_12_24_OFFSET);
+  }
+}
+
+static void set_battery_mode(bool enable_battery, st_mcp79410_registers_t *registers)
+{
+  if(enable_battery){
+    SET_BIT(registers->timekeeping_registers.rtcwkday_data, VBATEN_OFFSET);
+  }
+  else{
+    CLEAR_BIT(registers->timekeeping_registers.rtcwkday_data, VBATEN_OFFSET);
   }
 }
 
 void set_timedate(st_timedate_t timedate_data)
 {
+  // Input validation
+  if(!is_timedate_valid(timedate_data)) return;
 
+  // Segregating the time info digits
+  uint8_t seconds_ones_digit  = timedate_data.seconds % 10;
+  uint8_t seconds_tens_digit  = timedate_data.seconds / 10;
+  uint8_t minutes_ones_digit  = timedate_data.minutes % 10;
+  uint8_t minutes_tens_digit  = timedate_data.minutes / 10;
+  uint8_t hours_ones_digit    = timedate_data.hours % 10;
+  uint8_t hours_tens_digit    = timedate_data.hours / 10;
+  uint8_t wkday_ones_digit    = timedate_data.weekday;
+  uint8_t date_ones_digit     = timedate_data.date % 10;
+  uint8_t date_tens_digit     = timedate_data.date / 10;
+  uint8_t month_ones_digit    = timedate_data.month % 10;
+  uint8_t month_tens_digit    = timedate_data.month / 10;
+  uint8_t year_ones_digit     = timedate_data.year % 10;
+  uint8_t year_tens_digit     = (timedate_data.year / 10) % 10;
+
+  // Formatting the bytes that will be written in the registers
+  uint8_t rtcsec_time_data = (seconds_tens_digit << 4 | seconds_ones_digit);
+  uint8_t rtcmin_time_data = (minutes_tens_digit << 4 | minutes_ones_digit);
+  uint8_t rtchour_time_data = (hours_tens_digit << 4 | hours_ones_digit);
+  uint8_t rtcwkday_time_data = (wkday_ones_digit);
+  uint8_t rtcdate_time_data = (date_tens_digit << 4 | date_ones_digit);
+  uint8_t rtcmth_time_data = (month_tens_digit << 4 | month_ones_digit);
+  uint8_t rtcyear_time_data = (year_tens_digit << 4 | year_ones_digit);
+
+  // Handling 12-24 hour format
+  if(!timedate_data.is_24hr_mode){
+    SET_BIT(rtchour_time_data, BIT_12_24_OFFSET);
+
+    if(timedate_data.is_pm) SET_BIT(rtchour_time_data, HRTEN1_OFFSET);
+    else CLEAR_BIT(rtchour_time_data, HRTEN1_OFFSET);
+  }
+  else{
+    CLEAR_BIT(rtchour_time_data, BIT_12_24_OFFSET);
+  }
+  // Handling leap year
+  if(timedate_data.is_leap_year) SET_BIT(rtcmth_time_data, LPYR_WKDAY0_OFFSET);
+  else CLEAR_BIT(rtcmth_time_data, LPYR_WKDAY0_OFFSET);
+
+  // Clearing previous time data in the registers
+  CLEAR_BYTE_UPTO_BIT(mcp79410_registers.timekeeping_registers.rtcsec_data, ST_OFFSET);
+  CLEAR_BYTE(mcp79410_registers.timekeeping_registers.rtcmin_data);
+  CLEAR_BYTE(mcp79410_registers.timekeeping_registers.rtchour_data);
+  CLEAR_BYTE_UPTO_BIT(mcp79410_registers.timekeeping_registers.rtcwkday_data, VBATEN_OFFSET);
+  CLEAR_BYTE(mcp79410_registers.timekeeping_registers.rtcdate_data);
+  CLEAR_BYTE(mcp79410_registers.timekeeping_registers.rtcmth_data);
+  CLEAR_BYTE(mcp79410_registers.timekeeping_registers.rtcyear_data);
+
+  // Writing new time data into the registers
+  mcp79410_registers.timekeeping_registers.rtcsec_data    |= rtcsec_time_data;
+  mcp79410_registers.timekeeping_registers.rtcmin_data    |= rtcmin_time_data;
+  mcp79410_registers.timekeeping_registers.rtchour_data   |= rtchour_time_data;
+  mcp79410_registers.timekeeping_registers.rtcwkday_data  |= rtcwkday_time_data;
+  mcp79410_registers.timekeeping_registers.rtcdate_data   |= rtcdate_time_data;
+  mcp79410_registers.timekeeping_registers.rtcmth_data    |= rtcmth_time_data;
+  mcp79410_registers.timekeeping_registers.rtcyear_data   |= rtcyear_time_data;
 }
 
+static bool is_timedate_valid(st_timedate_t timedate_data)
+{
+  bool ret = true;
+  if(timedate_data.ms >= 1000) ret = false;
+  else if(timedate_data.seconds >= 60) ret = false;
+  else if(timedate_data.minutes >= 60) ret = false;
+  else if(timedate_data.hours >= 12 && timedate_data.is_24hr_mode == false) ret = false;
+  else if(timedate_data.hours >= 24 && timedate_data.is_24hr_mode == true) ret = false;
+  else if(timedate_data.weekday >= 8) ret = false;
+  else if(timedate_data.date >= 32) ret = false;
+  else if(timedate_data.month > 12) ret = false;
+  else if(timedate_data.is_24hr_mode != true && timedate_data.is_24hr_mode != false) ret = false;
+  else if(timedate_data.is_leap_year != true && timedate_data.is_leap_year != false) ret = false;
+  else if(timedate_data.is_pm != true && timedate_data.is_pm != false) ret = false;
 
+  return (ret);
+}
 
+static void convert_rtc_register_to_timedate (st_timedate_t *timedate_data, const st_mcp79410_registers_t *registers)
+{
+  // Input validation
+  if(timedate_data == NULL || registers == NULL) return;
 
+  // Retriving raw data from the registers
+  uint8_t rtcsec_time_data = (registers->timekeeping_registers.rtcsec_data);
+  uint8_t rtcmin_time_data = (registers->timekeeping_registers.rtcmin_data);
+  uint8_t rtchour_time_data = (registers->timekeeping_registers.rtchour_data);
+  uint8_t rtcwkday_time_data = (registers->timekeeping_registers.rtcwkday_data);
+  uint8_t rtcdate_time_data = (registers->timekeeping_registers.rtcdate_data);
+  uint8_t rtcmth_time_data = (registers->timekeeping_registers.rtcmth_data);
+  uint8_t rtcyear_time_data = (registers->timekeeping_registers.rtcyear_data);
+
+  // Cleaning the config and unimplemented bits
+  CLEAR_BYTE_DOWN_TO_BIT(rtcsec_time_data, SECTEN2_OFFSET);
+  CLEAR_BYTE_DOWN_TO_BIT(rtcmin_time_data, MINTEN2_OFFSET);
+  CLEAR_BYTE_DOWN_TO_BIT(rtchour_time_data, BIT_12_24_OFFSET);
+  CLEAR_BYTE_DOWN_TO_BIT(rtcwkday_time_data, RTCWKDAY2_OFFSET);
+  CLEAR_BYTE_DOWN_TO_BIT(rtcdate_time_data, DATETEN1_OFFSET);
+  CLEAR_BYTE_DOWN_TO_BIT(rtcmth_time_data, LPYR_WKDAY0_OFFSET);
+  CLEAR_BYTE_DOWN_TO_BIT(rtcyear_time_data, YRTEN3_OFFSET);
+
+  // Segregating the time info digits
+  uint8_t seconds_ones_digit  = (rtcsec_time_data & 0b00001111);
+  uint8_t seconds_tens_digit  = (rtcsec_time_data >> 4);
+  uint8_t minutes_ones_digit  = (rtcmin_time_data & 0b00001111);
+  uint8_t minutes_tens_digit  = (rtcmin_time_data >> 4);
+  uint8_t hours_ones_digit    = (rtchour_time_data & 0b00001111);
+  uint8_t hours_tens_digit;
+  uint8_t wkday_ones_digit    = (rtcwkday_time_data & 0b00000111);
+  uint8_t date_ones_digit     = (rtcdate_time_data & 0b00001111);
+  uint8_t date_tens_digit     = (rtcdate_time_data >> 4);
+  uint8_t month_ones_digit    = (rtcmth_time_data & 0b00001111);
+  uint8_t month_tens_digit    = ((rtcmth_time_data & 0b00010000) >> 4);
+  uint8_t year_ones_digit     = (rtcyear_time_data & 0b00001111);
+  uint8_t year_tens_digit     = (rtcyear_time_data >> 4);
+
+  // Handling the 12-24hr format
+  bool is_24hr_format = CHECK_BIT(rtchour_time_data, BIT_12_24_OFFSET);
+  if(is_24hr_format){
+    timedate_data->is_24hr_mode = true;
+    hours_tens_digit = ((rtchour_time_data & 0b00110000) >> 4);
+  }
+  else{
+    timedate_data->is_24hr_mode = false;
+    timedate_data->is_pm = CHECK_BIT(rtchour_time_data, HRTEN1_OFFSET);
+    hours_tens_digit = ((rtchour_time_data & 0b00010000) >> 4);
+  }
+  // Handling leap year
+  timedate_data->is_leap_year = CHECK_BIT(rtcmth_time_data, LPYR_WKDAY0_OFFSET);
+
+  timedate_data->ms = 0;
+  timedate_data->seconds = (seconds_tens_digit * 10) + seconds_ones_digit;
+  timedate_data->minutes = (minutes_tens_digit * 10) + minutes_ones_digit;
+  timedate_data->hours = (hours_tens_digit * 10) + hours_ones_digit;
+  timedate_data->weekday = wkday_ones_digit;
+  timedate_data->date = (date_tens_digit * 10) + date_ones_digit;
+  timedate_data->month = (month_tens_digit * 10) + month_ones_digit;
+  timedate_data->year = (year_tens_digit * 10) + year_ones_digit;
+}
 
 
 
