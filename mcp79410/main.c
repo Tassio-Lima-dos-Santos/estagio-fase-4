@@ -35,24 +35,11 @@
 #include "CLI_handling/cli.h"
 #include "MCP79410_stack/hal_mcp79410.h"
 
-static st_timedate_t initial_timedate;
-
 void app_init(void)
 {
   cli_app_init();
 
-  initial_timedate.ms = 0;
-  initial_timedate.seconds = 12;
-  initial_timedate.minutes = 20;
-  initial_timedate.hours = 16;
-  initial_timedate.weekday = 3;
-  initial_timedate.date = 22;
-  initial_timedate.month = 7;
-  initial_timedate.year = 2026;
-  initial_timedate.is_24hr_mode = true;
-  initial_timedate.is_pm = true;
-
-  MCP79410_init(true, true, true, initial_timedate);
+  MCP79410_init(true, true, true);
 }
 
 void app_process_action(void)

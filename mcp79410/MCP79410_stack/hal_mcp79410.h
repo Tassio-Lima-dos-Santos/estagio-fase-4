@@ -43,14 +43,13 @@
  ******************************************************************************/
 
 typedef struct {
-  int16_t year;
-  uint16_t ms;
   uint8_t seconds;
   uint8_t minutes;
   uint8_t hours;
   uint8_t weekday;
   uint8_t date;
   uint8_t month;
+  uint8_t year;
   bool is_leap_year;
   bool is_pm;
   bool is_24hr_mode;
@@ -66,9 +65,12 @@ typedef struct {
 
 void MCP79410_init(bool is_there_external_crystal,
                    bool is_24hr_mode,
-                   bool is_battery_enabled,
-                   st_timedate_t initial_data);
-void set_timedate (st_timedate_t timedate_data);
+                   bool is_battery_enabled);
+void set_timedate(st_timedate_t time);
+void set_time(st_timedate_t time);
+void set_date(st_timedate_t time);
+void get_timedate(st_timedate_t *time);
+bool is_timedate_valid(st_timedate_t timedate_data);
 
 /*******************************************************************************
  * END

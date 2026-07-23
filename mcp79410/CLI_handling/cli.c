@@ -24,6 +24,7 @@
 #include "sl_assert.h"
 #include "sl_sleeptimer.h"
 #include "em_device.h"
+#include "../MCP79410_stack/hal_mcp79410.h"
 
 /*******************************************************************************
  *******************************   DEFINES   ***********************************
@@ -37,6 +38,13 @@ void hello_cli_callback            (sl_cli_command_arg_t *arguments);
 
 void uptime_cli_callback        (sl_cli_command_arg_t *arguments);
 void reset_cli_callback        (sl_cli_command_arg_t *arguments);
+
+void set_timedate_cli_callback(sl_cli_command_arg_t *arguments);
+void set_time_cli_callback(sl_cli_command_arg_t *arguments);
+void set_date_cli_callback(sl_cli_command_arg_t *arguments);
+void get_timedate_cli_callback(sl_cli_command_arg_t *arguments);
+void get_time_cli_callback(sl_cli_command_arg_t *arguments);
+void get_date_cli_callback(sl_cli_command_arg_t *arguments);
 
 #if SL_SIMPLE_BUTTON_COUNT > 0
 void button_callback      (sl_cli_command_arg_t *arguments);
@@ -97,9 +105,64 @@ static sl_cli_command_entry_t system_table[] = {
 static const sl_cli_command_info_t cmd_group__system_table = \
   SL_CLI_COMMAND_GROUP(system_table, "System related commands");
 
+/***************************************************************************//**
+ * Command info for real time related commands
+ ******************************************************************************/
+
+static const sl_cli_command_info_t cmd__real_time_set_timedate = \
+  SL_CLI_COMMAND(set_timedate_cli_callback,
+                 "Set the timedate in the RTC",
+                 "Date"SL_CLI_UNIT_SEPARATOR"Month"SL_CLI_UNIT_SEPARATOR"Year (Only the 2 last digits, i.e. 2026 is 26)"SL_CLI_UNIT_SEPARATOR"Hours"SL_CLI_UNIT_SEPARATOR"Minutes"SL_CLI_UNIT_SEPARATOR"Seconds",
+                 { SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
+
+static const sl_cli_command_info_t cmd__real_time_set_time = \
+  SL_CLI_COMMAND(set_time_cli_callback,
+                 "Set the time in the RTC",
+                 "Date"SL_CLI_UNIT_SEPARATOR"Month"SL_CLI_UNIT_SEPARATOR"Year (Only the 2 last digits, i.e. 2026 is 26)"SL_CLI_UNIT_SEPARATOR"Hours"SL_CLI_UNIT_SEPARATOR"Minutes"SL_CLI_UNIT_SEPARATOR"Seconds",
+                 { SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
+
+static const sl_cli_command_info_t cmd__real_time_set_date = \
+  SL_CLI_COMMAND(set_date_cli_callback,
+                 "Set the time in the RTC",
+                 "Date"SL_CLI_UNIT_SEPARATOR"Month"SL_CLI_UNIT_SEPARATOR"Year (Only the 2 last digits, i.e. 2026 is 26)"SL_CLI_UNIT_SEPARATOR"Hours"SL_CLI_UNIT_SEPARATOR"Minutes"SL_CLI_UNIT_SEPARATOR"Seconds",
+                 { SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
+
+static const sl_cli_command_info_t cmd__real_time_get_timedate = \
+  SL_CLI_COMMAND(get_timedate_cli_callback,
+                 "Gets the time from RTC",
+                 "Nothing",
+                 { SL_CLI_ARG_END, });
+
+static const sl_cli_command_info_t cmd__real_time_get_time = \
+  SL_CLI_COMMAND(get_time_cli_callback,
+                 "Gets the time from RTC",
+                 "Nothing",
+                 { SL_CLI_ARG_END, });
+
+static const sl_cli_command_info_t cmd__real_time_get_date = \
+  SL_CLI_COMMAND(get_date_cli_callback,
+                 "Gets the date from RTC",
+                 "Nothing",
+                 { SL_CLI_ARG_END, });
+
+static sl_cli_command_entry_t real_time_table[] = {
+  { "set_timedate", &cmd__real_time_set_timedate, false },
+  { "set_time", &cmd__real_time_set_time, false },
+  { "set_date", &cmd__real_time_set_date, false },
+  { "get_timedate", &cmd__real_time_get_timedate, false },
+  { "get_time", &cmd__real_time_get_time, false },
+  { "get_date", &cmd__real_time_get_date, false },
+
+  { NULL, NULL, false },
+};
+
+static const sl_cli_command_info_t cmd_group__real_time_table = \
+  SL_CLI_COMMAND_GROUP(real_time_table, "Real time related commands");
+
 static sl_cli_command_entry_t main_table[] = {
   { "print_group", &cmd_group__print_table, false },
   { "system", &cmd_group__system_table, false },
+  { "real_time", &cmd_group__real_time_table, false },
 
   { NULL, NULL, false },
 };
@@ -167,6 +230,109 @@ void reset_cli_callback(sl_cli_command_arg_t *arguments){
   printf("Resetting system!\r\n");
   sl_sleeptimer_delay_millisecond(1000);
   NVIC_SystemReset();
+}
+
+/***************************************************************************//**
+ * Callback for set_timedate
+ *
+ * This function is used as a callback when the set_time command is called
+ * in the cli.
+ ******************************************************************************/
+void set_timedate_cli_callback(sl_cli_command_arg_t *arguments){
+  st_timedate_t time_argument;
+
+  time_argument.date = sl_cli_get_argument_uint8(arguments, 0);
+  time_argument.month = sl_cli_get_argument_uint8(arguments, 1);
+  time_argument.year = sl_cli_get_argument_uint8(arguments, 2);
+  time_argument.hours = sl_cli_get_argument_uint8(arguments, 3);
+  time_argument.minutes = sl_cli_get_argument_uint8(arguments, 4);
+  time_argument.seconds = sl_cli_get_argument_uint8(arguments, 5);
+  time_argument.is_pm = false;
+  time_argument.is_24hr_mode = true;
+  time_argument.is_leap_year = true;
+  time_argument.weekday = 1;
+
+  if(!is_timedate_valid(time_argument)){
+    printf("Invalid time\r\n");
+    return;
+  }
+
+  set_timedate(time_argument);
+}
+
+/***************************************************************************//**
+ * Callback for set_time
+ *
+ * This function is used as a callback when the set_time command is called
+ * in the cli.
+ ******************************************************************************/
+void set_time_cli_callback(sl_cli_command_arg_t *arguments){
+
+}
+
+/***************************************************************************//**
+ * Callback for set_date
+ *
+ * This function is used as a callback when the set_date command is called
+ * in the cli.
+ ******************************************************************************/
+void set_date_cli_callback(sl_cli_command_arg_t *arguments){
+
+}
+
+/***************************************************************************//**
+ * Callback for get_timedate
+ *
+ * This function is used as a callback when the get_timedate command is called
+ * in the cli.
+ ******************************************************************************/
+void get_timedate_cli_callback(sl_cli_command_arg_t *arguments){
+  st_timedate_t current_time;
+  get_timedate(&current_time);
+
+  printf("Current time - %02d:%02d:%02d\r\n"
+         "Current date - %02d/%02d/20%02d\r\n",
+         current_time.hours,
+         current_time.minutes,
+         current_time.seconds,
+         current_time.date,
+         current_time.month,
+         current_time.year
+         );
+}
+
+/***************************************************************************//**
+ * Callback for get_time
+ *
+ * This function is used as a callback when the get_time command is called
+ * in the cli.
+ ******************************************************************************/
+void get_time_cli_callback(sl_cli_command_arg_t *arguments){
+  st_timedate_t current_time;
+  get_timedate(&current_time);
+
+  printf("Current time - %02d:%02d:%02d\r\n",
+         current_time.hours,
+         current_time.minutes,
+         current_time.seconds
+         );
+}
+
+/***************************************************************************//**
+ * Callback for get_date
+ *
+ * This function is used as a callback when the get_date command is called
+ * in the cli.
+ ******************************************************************************/
+void get_date_cli_callback(sl_cli_command_arg_t *arguments){
+  st_timedate_t current_time;
+  get_timedate(&current_time);
+
+  printf("Current date - %02d/%02d/20%02d\r\n",
+         current_time.date,
+         current_time.month,
+         current_time.year
+         );
 }
 
 /*******************************************************************************

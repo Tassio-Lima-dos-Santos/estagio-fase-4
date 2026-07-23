@@ -96,6 +96,36 @@
  * RTCC Registers Bit Map
  ******************************************************************************/
 
+// ---------------------- Registers' time data bitmasks ----------------------
+
+#define MCP79410_RTCSEC_TIME_DATA_MASK                      0b01111111U
+#define MCP79410_RTCMIN_TIME_DATA_MASK                      0b01111111U
+#define MCP79410_RTCHOUR_TIME_DATA_MASK                     0b01111111U
+#define MCP79410_RTCWKDAY_TIME_DATA_MASK                    0b00000111U
+#define MCP79410_RTCDATE_TIME_DATA_MASK                     0b00111111U
+#define MCP79410_RTCMTH_TIME_DATA_MASK                      0b00111111U
+#define MCP79410_RTCYEAR_TIME_DATA_MASK                     0b11111111U
+
+#define MCP79410_ALMSEC_TIME_DATA_MASK                      0b01111111U
+#define MCP79410_ALMMIN_TIME_DATA_MASK                      0b01111111U
+#define MCP79410_ALMHOUR_TIME_DATA_MASK                     0b01111111U
+#define MCP79410_ALMWKDAY_TIME_DATA_MASK                    0b00000111U
+#define MCP79410_ALMDATE_TIME_DATA_MASK                     0b00111111U
+#define MCP79410_ALMMTH_TIME_DATA_MASK                      0b00011111U
+
+#define MCP79410_PWRDNMIN_TIME_DATA_MASK                    0b01111111U
+#define MCP79410_PWRDNHOUR_TIME_DATA_MASK                   0b01111111U
+#define MCP79410_PWRDNWKDAY_TIME_DATA_MASK                  0b11100000U
+#define MCP79410_PWRDNDATE_TIME_DATA_MASK                   0b00111111U
+#define MCP79410_PWRDNMTH_TIME_DATA_MASK                    0b00011111U
+#define MCP79410_PWRUPMIN_TIME_DATA_MASK                    0b01111111U
+#define MCP79410_PWRUPHOUR_TIME_DATA_MASK                   0b01111111U
+#define MCP79410_PWRUPWKDAY_TIME_DATA_MASK                  0b11100000U
+#define MCP79410_PWRUPDATE_TIME_DATA_MASK                   0b00111111U
+#define MCP79410_PWRUPMTH_TIME_DATA_MASK                    0b00011111U
+
+// ---------------------- Registers' offsets ----------------------
+
 enum enum_sec_offset{
   SECONE0_OFFSET = 0,
   SECONE1_OFFSET = 1,
