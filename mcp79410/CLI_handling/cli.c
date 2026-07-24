@@ -39,10 +39,10 @@ void hello_cli_callback            (sl_cli_command_arg_t *arguments);
 void uptime_cli_callback        (sl_cli_command_arg_t *arguments);
 void reset_cli_callback        (sl_cli_command_arg_t *arguments);
 
-void set_timedate_cli_callback(sl_cli_command_arg_t *arguments);
+void set_datetime_cli_callback(sl_cli_command_arg_t *arguments);
 void set_time_cli_callback(sl_cli_command_arg_t *arguments);
 void set_date_cli_callback(sl_cli_command_arg_t *arguments);
-void get_timedate_cli_callback(sl_cli_command_arg_t *arguments);
+void get_datetime_cli_callback(sl_cli_command_arg_t *arguments);
 void get_time_cli_callback(sl_cli_command_arg_t *arguments);
 void get_date_cli_callback(sl_cli_command_arg_t *arguments);
 
@@ -109,27 +109,27 @@ static const sl_cli_command_info_t cmd_group__system_table = \
  * Command info for real time related commands
  ******************************************************************************/
 
-static const sl_cli_command_info_t cmd__real_time_set_timedate = \
-  SL_CLI_COMMAND(set_timedate_cli_callback,
-                 "Set the timedate in the RTC",
+static const sl_cli_command_info_t cmd__real_time_set_datetime = \
+  SL_CLI_COMMAND(set_datetime_cli_callback,
+                 "Set the datetime in the RTC",
                  "Date"SL_CLI_UNIT_SEPARATOR"Month"SL_CLI_UNIT_SEPARATOR"Year (Only the 2 last digits, i.e. 2026 is 26)"SL_CLI_UNIT_SEPARATOR"Hours"SL_CLI_UNIT_SEPARATOR"Minutes"SL_CLI_UNIT_SEPARATOR"Seconds",
                  { SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
 
 static const sl_cli_command_info_t cmd__real_time_set_time = \
   SL_CLI_COMMAND(set_time_cli_callback,
                  "Set the time in the RTC",
-                 "Date"SL_CLI_UNIT_SEPARATOR"Month"SL_CLI_UNIT_SEPARATOR"Year (Only the 2 last digits, i.e. 2026 is 26)"SL_CLI_UNIT_SEPARATOR"Hours"SL_CLI_UNIT_SEPARATOR"Minutes"SL_CLI_UNIT_SEPARATOR"Seconds",
-                 { SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
+                 "Hours"SL_CLI_UNIT_SEPARATOR"Minutes"SL_CLI_UNIT_SEPARATOR"Seconds",
+                 { SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
 
 static const sl_cli_command_info_t cmd__real_time_set_date = \
   SL_CLI_COMMAND(set_date_cli_callback,
                  "Set the time in the RTC",
-                 "Date"SL_CLI_UNIT_SEPARATOR"Month"SL_CLI_UNIT_SEPARATOR"Year (Only the 2 last digits, i.e. 2026 is 26)"SL_CLI_UNIT_SEPARATOR"Hours"SL_CLI_UNIT_SEPARATOR"Minutes"SL_CLI_UNIT_SEPARATOR"Seconds",
-                 { SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
+                 "Date"SL_CLI_UNIT_SEPARATOR"Month"SL_CLI_UNIT_SEPARATOR"Year (Only the 2 last digits, i.e. 2026 is 26)",
+                 { SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
 
-static const sl_cli_command_info_t cmd__real_time_get_timedate = \
-  SL_CLI_COMMAND(get_timedate_cli_callback,
-                 "Gets the time from RTC",
+static const sl_cli_command_info_t cmd__real_time_get_datetime = \
+  SL_CLI_COMMAND(get_datetime_cli_callback,
+                 "Gets the datetime from RTC",
                  "Nothing",
                  { SL_CLI_ARG_END, });
 
@@ -146,10 +146,10 @@ static const sl_cli_command_info_t cmd__real_time_get_date = \
                  { SL_CLI_ARG_END, });
 
 static sl_cli_command_entry_t real_time_table[] = {
-  { "set_timedate", &cmd__real_time_set_timedate, false },
+  { "set_datetime", &cmd__real_time_set_datetime, false },
   { "set_time", &cmd__real_time_set_time, false },
   { "set_date", &cmd__real_time_set_date, false },
-  { "get_timedate", &cmd__real_time_get_timedate, false },
+  { "get_datetime", &cmd__real_time_get_datetime, false },
   { "get_time", &cmd__real_time_get_time, false },
   { "get_date", &cmd__real_time_get_date, false },
 
@@ -233,13 +233,13 @@ void reset_cli_callback(sl_cli_command_arg_t *arguments){
 }
 
 /***************************************************************************//**
- * Callback for set_timedate
+ * Callback for set_datetime
  *
  * This function is used as a callback when the set_time command is called
  * in the cli.
  ******************************************************************************/
-void set_timedate_cli_callback(sl_cli_command_arg_t *arguments){
-  st_timedate_t time_argument;
+void set_datetime_cli_callback(sl_cli_command_arg_t *arguments){
+  st_datetime_t time_argument;
 
   time_argument.date = sl_cli_get_argument_uint8(arguments, 0);
   time_argument.month = sl_cli_get_argument_uint8(arguments, 1);
@@ -252,12 +252,14 @@ void set_timedate_cli_callback(sl_cli_command_arg_t *arguments){
   time_argument.is_leap_year = true;
   time_argument.weekday = 1;
 
-  if(!is_timedate_valid(time_argument)){
+  if(!is_datetime_valid(time_argument)){
     printf("Invalid time\r\n");
     return;
   }
 
-  set_timedate(time_argument);
+  set_datetime(time_argument);
+
+  printf("Datetime set!");
 }
 
 /***************************************************************************//**
@@ -267,7 +269,27 @@ void set_timedate_cli_callback(sl_cli_command_arg_t *arguments){
  * in the cli.
  ******************************************************************************/
 void set_time_cli_callback(sl_cli_command_arg_t *arguments){
+  st_datetime_t time_argument;
 
+  time_argument.date = 0;
+  time_argument.month = 0;
+  time_argument.year = 0;
+  time_argument.hours = sl_cli_get_argument_uint8(arguments, 0);
+  time_argument.minutes = sl_cli_get_argument_uint8(arguments, 1);
+  time_argument.seconds = sl_cli_get_argument_uint8(arguments, 2);
+  time_argument.is_pm = false;
+  time_argument.is_24hr_mode = true;
+  time_argument.is_leap_year = true;
+  time_argument.weekday = 1;
+
+  if(!is_datetime_valid(time_argument)){
+    printf("Invalid time\r\n");
+    return;
+  }
+
+  set_time(time_argument);
+
+  printf("Time set!");
 }
 
 /***************************************************************************//**
@@ -277,18 +299,38 @@ void set_time_cli_callback(sl_cli_command_arg_t *arguments){
  * in the cli.
  ******************************************************************************/
 void set_date_cli_callback(sl_cli_command_arg_t *arguments){
+  st_datetime_t time_argument;
 
+  time_argument.date = sl_cli_get_argument_uint8(arguments, 0);
+  time_argument.month = sl_cli_get_argument_uint8(arguments, 1);
+  time_argument.year = sl_cli_get_argument_uint8(arguments, 2);
+  time_argument.hours = 0;
+  time_argument.minutes = 0;
+  time_argument.seconds = 0;
+  time_argument.is_pm = false;
+  time_argument.is_24hr_mode = true;
+  time_argument.is_leap_year = true;
+  time_argument.weekday = 1;
+
+  if(!is_datetime_valid(time_argument)){
+    printf("Invalid time\r\n");
+    return;
+  }
+
+  set_date(time_argument);
+
+  printf("Date set!");
 }
 
 /***************************************************************************//**
- * Callback for get_timedate
+ * Callback for get_datetime
  *
- * This function is used as a callback when the get_timedate command is called
+ * This function is used as a callback when the get_datetime command is called
  * in the cli.
  ******************************************************************************/
-void get_timedate_cli_callback(sl_cli_command_arg_t *arguments){
-  st_timedate_t current_time;
-  get_timedate(&current_time);
+void get_datetime_cli_callback(sl_cli_command_arg_t *arguments){
+  st_datetime_t current_time;
+  get_datetime(&current_time);
 
   printf("Current time - %02d:%02d:%02d\r\n"
          "Current date - %02d/%02d/20%02d\r\n",
@@ -308,8 +350,8 @@ void get_timedate_cli_callback(sl_cli_command_arg_t *arguments){
  * in the cli.
  ******************************************************************************/
 void get_time_cli_callback(sl_cli_command_arg_t *arguments){
-  st_timedate_t current_time;
-  get_timedate(&current_time);
+  st_datetime_t current_time;
+  get_datetime(&current_time);
 
   printf("Current time - %02d:%02d:%02d\r\n",
          current_time.hours,
@@ -325,8 +367,8 @@ void get_time_cli_callback(sl_cli_command_arg_t *arguments){
  * in the cli.
  ******************************************************************************/
 void get_date_cli_callback(sl_cli_command_arg_t *arguments){
-  st_timedate_t current_time;
-  get_timedate(&current_time);
+  st_datetime_t current_time;
+  get_datetime(&current_time);
 
   printf("Current date - %02d/%02d/20%02d\r\n",
          current_time.date,
