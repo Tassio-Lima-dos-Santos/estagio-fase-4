@@ -1,7 +1,7 @@
 /******************************************************************************
- * File HDC_1080_sensor_config.h
+ * File mcp79410_config.h
  *
- *  Created on: 15 de jul. de 2026
+ *  Created on: 20 de jul. de 2026
  *      Author: Tassio Lima dos Santos
  *      Email: desenvolvimento20@globalsonic.com.br
  *****************************************************************************/
@@ -18,8 +18,8 @@
 /******************************************************************************
  * Multiple include protection
  *****************************************************************************/
-#ifndef HDC_HAL_HDC_1080_SENSOR_CONFIG_H_
-#define HDC_HAL_HDC_1080_SENSOR_CONFIG_H_
+#ifndef MCP79410_STACK_MCP79410_CONFIG_H_
+#define MCP79410_STACK_MCP79410_CONFIG_H_
 
 
 
@@ -37,33 +37,33 @@
  * Defines
  ******************************************************************************/
 
-#ifndef HDC_1080_SENSOR_PERIPHERAL
-#define HDC_1080_SENSOR_PERIPHERAL              I2C0
-#endif // HDC_1080_SENSOR_PERIPHERAL
+#ifndef MCP79410_PERIPHERAL
+#define MCP79410_PERIPHERAL              I2C0
+#endif // MCP79410_PERIPHERAL
 
-// HDC 1080 ENABLE on PB01
-#ifndef HDC_1080_SENSOR_ENABLE_PORT
-#define HDC_1080_SENSOR_ENABLE_PORT                gpioPortB
-#endif // HDC_1080_SENSOR_ENABLE_PORT
-#ifndef HDC_1080_SENSOR_ENABLE_PIN
-#define HDC_1080_SENSOR_ENABLE_PIN                 0
-#endif // HDC_1080_SENSOR_ENABLE_PIN
+// MCP79410 there is no ENABLE on PB01
+//#ifndef MCP79410_ENABLE_PORT
+//#define MCP79410_ENABLE_PORT
+//#endif // MCP79410_ENABLE_PORT
+//#ifndef MCP79410_ENABLE_PIN
+//#define MCP79410_ENABLE_PIN
+//#endif // MCP79410_ENABLE_PIN
 
-// I2C0 SCL on PC02
-#ifndef HDC_1080_SENSOR_SCL_PORT
-#define HDC_1080_SENSOR_SCL_PORT                gpioPortC
-#endif // HDC_1080_SENSOR_SCL_PORT
-#ifndef HDC_1080_SENSOR_SCL_PIN
-#define HDC_1080_SENSOR_SCL_PIN                 2
-#endif // HDC_1080_SENSOR_SCL_PIN
+// I2C0 SCL on PB01
+#ifndef MCP79410_SCL_PORT
+#define MCP79410_SCL_PORT                gpioPortB
+#endif // MCP79410_SCL_PORT
+#ifndef MCP79410_SCL_PIN
+#define MCP79410_SCL_PIN                 1
+#endif // MCP79410_SCL_PIN
 
-// I2C0 SDA on PC03
-#ifndef HDC_1080_SENSOR_SDA_PORT
-#define HDC_1080_SENSOR_SDA_PORT                gpioPortC
-#endif // HDC_1080_SENSOR_SDA_PORT
-#ifndef HDC_1080_SENSOR_SDA_PIN
-#define HDC_1080_SENSOR_SDA_PIN                 3
-#endif // HDC_1080_SENSOR_SDA_PIN
+// I2C0 SDA on PB00
+#ifndef MCP79410_SDA_PORT
+#define MCP79410_SDA_PORT                gpioPortB
+#endif // MCP79410_SDA_PORT
+#ifndef MCP79410_SDA_PIN
+#define MCP79410_SDA_PIN                 0
+#endif // MCP79410_SDA_PIN
 
 /*******************************************************************************
  * Typedef & Enums
@@ -81,4 +81,4 @@
  * END
  ******************************************************************************/
 
-#endif /* HDC_HAL_HDC_1080_SENSOR_CONFIG_H_ */
+#endif /* MCP79410_STACK_MCP79410_CONFIG_H_ */
