@@ -179,6 +179,7 @@ void MCP79410_init(bool is_there_external_crystal, bool is_24hr_mode, bool is_ba
 
   set_battery_mode(is_battery_enabled, &mcp79410_registers);
 
+  set_datetime_on_mcp79410_from_register_struct(&mcp79410_registers);
 
 #ifdef DEBUG
   st_datetime_t read_test;
@@ -752,9 +753,40 @@ void get_datetime(st_datetime_t *time){
   get_datetime_from_registers_struct(time, &mcp79410_registers);
 }
 
+void set_trimming(bool is_add_clock, bool is_coarse_trim, uint8_t clock_cycles)
+{
+  uint8_t osctrim_reg = 0;
+  clock_cycles = clock_cycles >> 1;
+  if(is_add_clock) SET_BIT(osctrim_reg, 7);
 
+  osctrim_reg |= clock_cycles;
 
+  uint8_t control_reg;
+  uint16_t read_size = 1;
+  read_from_register(MCP79410_RTCC_REGISTER_CONTROL_ADDRESS, &control_reg, &read_size);
 
+  if(is_coarse_trim) SET_BIT(control_reg, 2);
+  else CLEAR_BIT(control_reg, 2);
+
+  write_to_register(MCP79410_RTCC_REGISTER_CONTROL_ADDRESS, &control_reg, 1);
+  write_to_register(MCP79410_RTCC_REGISTER_OSCTRIM_ADDRESS, &osctrim_reg, 1);
+}
+
+uint8_t get_trimming(void)
+{
+  uint8_t osctrim_reg;
+  uint16_t read_size = 1;
+
+  read_from_register(MCP79410_RTCC_REGISTER_OSCTRIM_ADDRESS, &osctrim_reg, &read_size);
+
+  return (osctrim_reg);
+}
+
+void get_all_register(uint8_t *reg_array)
+{
+  uint16_t total_size = 32;
+  read_from_register(MCP79410_RTCC_REGISTER_RTCSEC_ADDRESS, reg_array, &total_size);
+}
 
 
 

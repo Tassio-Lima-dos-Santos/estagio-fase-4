@@ -30,6 +30,8 @@
  *******************************   DEFINES   ***********************************
  ******************************************************************************/
 
+#define CHECK_BIT(byte, bit) (((byte) >> (bit)) & 1U)
+
 /*******************************************************************************
  *********************   LOCAL FUNCTION PROTOTYPES   ***************************
  ******************************************************************************/
@@ -42,9 +44,12 @@ void reset_cli_callback        (sl_cli_command_arg_t *arguments);
 void set_datetime_cli_callback(sl_cli_command_arg_t *arguments);
 void set_time_cli_callback(sl_cli_command_arg_t *arguments);
 void set_date_cli_callback(sl_cli_command_arg_t *arguments);
+void set_trimming_cli_callback(sl_cli_command_arg_t *arguments);
 void get_datetime_cli_callback(sl_cli_command_arg_t *arguments);
 void get_time_cli_callback(sl_cli_command_arg_t *arguments);
 void get_date_cli_callback(sl_cli_command_arg_t *arguments);
+void get_trimming_cli_callback(sl_cli_command_arg_t *arguments);
+void get_all_registers_cli_callback(sl_cli_command_arg_t *arguments);
 
 #if SL_SIMPLE_BUTTON_COUNT > 0
 void button_callback      (sl_cli_command_arg_t *arguments);
@@ -55,6 +60,7 @@ void wait_button_callback (sl_cli_command_arg_t *arguments);
 void set_led_cli_callback         (sl_cli_command_arg_t *arguments);
 void blink_led_cli_callback   (sl_cli_command_arg_t *arguments);
 #endif
+
 
 /*******************************************************************************
  ***************************  LOCAL VARIABLES   ********************************
@@ -127,6 +133,12 @@ static const sl_cli_command_info_t cmd__real_time_set_date = \
                  "Date"SL_CLI_UNIT_SEPARATOR"Month"SL_CLI_UNIT_SEPARATOR"Year (Only the 2 last digits, i.e. 2026 is 26)",
                  { SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
 
+static const sl_cli_command_info_t cmd__real_time_set_trimming = \
+  SL_CLI_COMMAND(set_trimming_cli_callback,
+                 "Set the trimming in the RTC",
+                 "Sign (add is 1, subtraction is 0)"SL_CLI_UNIT_SEPARATOR"Enable coarse trim"SL_CLI_UNIT_SEPARATOR"Pulses",
+                 { SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_UINT8, SL_CLI_ARG_END, });
+
 static const sl_cli_command_info_t cmd__real_time_get_datetime = \
   SL_CLI_COMMAND(get_datetime_cli_callback,
                  "Gets the datetime from RTC",
@@ -145,13 +157,28 @@ static const sl_cli_command_info_t cmd__real_time_get_date = \
                  "Nothing",
                  { SL_CLI_ARG_END, });
 
+static const sl_cli_command_info_t cmd__real_time_get_trimming = \
+  SL_CLI_COMMAND(get_trimming_cli_callback,
+                 "Gets trimming info from RTC",
+                 "Nothing",
+                 { SL_CLI_ARG_END, });
+
+static const sl_cli_command_info_t cmd__real_time_get_all_registers = \
+  SL_CLI_COMMAND(get_all_registers_cli_callback,
+                 "Gets trimming info from RTC",
+                 "Nothing",
+                 { SL_CLI_ARG_END, });
+
 static sl_cli_command_entry_t real_time_table[] = {
   { "set_datetime", &cmd__real_time_set_datetime, false },
   { "set_time", &cmd__real_time_set_time, false },
   { "set_date", &cmd__real_time_set_date, false },
+  { "set_trimming", &cmd__real_time_set_trimming, false },
   { "get_datetime", &cmd__real_time_get_datetime, false },
   { "get_time", &cmd__real_time_get_time, false },
   { "get_date", &cmd__real_time_get_date, false },
+  { "get_trimming", &cmd__real_time_get_trimming, false },
+  { "get_all_registers", &cmd__real_time_get_all_registers, false },
 
   { NULL, NULL, false },
 };
@@ -323,6 +350,23 @@ void set_date_cli_callback(sl_cli_command_arg_t *arguments){
 }
 
 /***************************************************************************//**
+ * Callback for set_trimming
+ *
+ * This function is used as a callback when the set_date command is called
+ * in the cli.
+ ******************************************************************************/
+void set_trimming_cli_callback(sl_cli_command_arg_t *arguments)
+{
+  bool sign = sl_cli_get_argument_uint8(arguments, 0);
+  bool coarse_trim = sl_cli_get_argument_uint8(arguments, 1);
+  uint8_t pulses = sl_cli_get_argument_uint8(arguments, 2);
+
+  set_trimming(sign, coarse_trim, pulses);
+
+  printf("Trimming set!\r\n");
+}
+
+/***************************************************************************//**
  * Callback for get_datetime
  *
  * This function is used as a callback when the get_datetime command is called
@@ -375,6 +419,66 @@ void get_date_cli_callback(sl_cli_command_arg_t *arguments){
          current_time.month,
          current_time.year
          );
+}
+
+/***************************************************************************//**
+ * Callback for get_date
+ *
+ * This function is used as a callback when the get_date command is called
+ * in the cli.
+ ******************************************************************************/
+void get_trimming_cli_callback(sl_cli_command_arg_t *arguments){
+  uint8_t osctrim_reg = get_trimming();
+
+  bool is_add = CHECK_BIT(osctrim_reg, 7);
+  uint8_t pulses = osctrim_reg << 1;
+
+  if(is_add) printf("Trim adds ");
+  else printf("Trim subtracts ");
+  printf("%u clock cycles\r\n", pulses);
+}
+
+void get_all_registers_cli_callback(sl_cli_command_arg_t *arguments)
+{
+  uint8_t reg_array[64];
+  get_all_register(reg_array);
+
+  printf("\r\nRTCSEC    : %08b", reg_array[0]);
+  printf("\r\nRTCMIN    : %08b", reg_array[1]);
+  printf("\r\nRTCHOUR   : %08b", reg_array[2]);
+  printf("\r\nRTCWKDAY  : %08b", reg_array[3]);
+  printf("\r\nRTCDATE   : %08b", reg_array[4]);
+  printf("\r\nRTCMTH    : %08b", reg_array[5]);
+  printf("\r\nRTCYEAR   : %08b", reg_array[6]);
+  printf("\r\nCONTROL   : %08b", reg_array[7]);
+  printf("\r\nOSCTRIM   : %08b", reg_array[8]);
+  printf("\r\nEEUNLOCK  : %08b", reg_array[9]);
+
+  printf("\r\nALM0SEC   : %08b", reg_array[10]);
+  printf("\r\nALM0MIN   : %08b", reg_array[11]);
+  printf("\r\nALM0HOUR  : %08b", reg_array[12]);
+  printf("\r\nALM0WKDAY : %08b", reg_array[13]);
+  printf("\r\nALM0DATE  : %08b", reg_array[14]);
+  printf("\r\nALM0MTH   : %08b", reg_array[15]);
+
+  printf("\r\nALM1SEC   : %08b", reg_array[17]);
+  printf("\r\nALM1MIN   : %08b", reg_array[18]);
+  printf("\r\nALM1HOUR  : %08b", reg_array[19]);
+  printf("\r\nALM1WKDAY : %08b", reg_array[20]);
+  printf("\r\nALM1DATE  : %08b", reg_array[21]);
+  printf("\r\nALM1MTH   : %08b", reg_array[22]);
+
+  printf("\r\nPWRDNMIN  : %08b", reg_array[24]);
+  printf("\r\nPWRDNHOUR : %08b", reg_array[25]);
+  printf("\r\nPWRDNDATE : %08b", reg_array[26]);
+  printf("\r\nPWRDNMTH  : %08b", reg_array[27]);
+
+  printf("\r\nPWRUPMIN  : %08b", reg_array[28]);
+  printf("\r\nPWRUPHOUR : %08b", reg_array[29]);
+  printf("\r\nPWRUPDATE : %08b", reg_array[30]);
+  printf("\r\nPWRUPMTH  : %08b", reg_array[31]);
+
+  printf("\r\n");
 }
 
 /*******************************************************************************

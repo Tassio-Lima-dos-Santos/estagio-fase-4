@@ -1,7 +1,7 @@
 /******************************************************************************
- * File hal_mcp79410.h
+ * File HDC_1080.h
  *
- *  Created on: 17 de jul. de 2026
+ *  Created on: 15 de jul. de 2026
  *      Author: Tassio Lima dos Santos
  *      Email: desenvolvimento20@globalsonic.com.br
  *****************************************************************************/
@@ -18,17 +18,14 @@
 /******************************************************************************
  * Multiple include protection
  *****************************************************************************/
-#ifndef MCP79410_STACK_HAL_MCP79410_H_
-#define MCP79410_STACK_HAL_MCP79410_H_
+#ifndef HDC_HAL_HDC_1080_H_
+#define HDC_HAL_HDC_1080_H_
 
 
 
 /*******************************************************************************
  * Includes
  ******************************************************************************/
-
-#include <stdint.h>
-#include <stdbool.h>
 
 /*******************************************************************************
  * Macros
@@ -38,24 +35,9 @@
  * Defines
  ******************************************************************************/
 
-#define DEBUG
-
 /*******************************************************************************
  * Typedef & Enums
  ******************************************************************************/
-
-typedef struct {
-  uint8_t seconds;
-  uint8_t minutes;
-  uint8_t hours;
-  uint8_t weekday;
-  uint8_t date;
-  uint8_t month;
-  uint8_t year;
-  bool is_leap_year;
-  bool is_pm;
-  bool is_24hr_mode;
-} st_datetime_t;
 
 /*******************************************************************************
  * Externs
@@ -65,30 +47,13 @@ typedef struct {
  * Interface Functions
  ******************************************************************************/
 
-void MCP79410_init(bool is_there_external_crystal,
-                   bool is_24hr_mode,
-                   bool is_battery_enabled);
-
-void set_datetime(st_datetime_t time);
-
-void set_time(st_datetime_t time);
-
-void set_date(st_datetime_t time);
-
-void get_datetime(st_datetime_t *time);
-
-void set_trimming(bool is_add_clock, bool is_per_minute, uint8_t clock_cycles);
-
-uint8_t get_trimming(void);
-
-#ifdef DEBUG
-void get_all_register(uint8_t *reg_array);
-#endif
-
-bool is_datetime_valid(st_datetime_t datetime_data);
+void HDC_1080_init(void);
+void measure_temperature_and_RH(void);
+float get_temperature(void);
+float get_relative_humidity(void);
 
 /*******************************************************************************
  * END
  ******************************************************************************/
 
-#endif /* MCP79410_STACK_HAL_MCP79410_H_ */
+#endif /* HDC_HAL_HDC_1080_H_ */
