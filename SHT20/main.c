@@ -35,6 +35,7 @@
 #include "zigbee_app_framework_event.h"
 #include "em_gpio.h"
 #include "hal_sht20/hal_sht20.h"
+#include "CLI_handling/cli.h"
 #include <stdio.h>
 
 #define TEMPERATURE_POLLING_PERIOD_MS 1000
@@ -47,6 +48,8 @@ void app_init(void)
 {
   GPIO_PinModeSet(gpioPortB, 0, gpioModePushPull, 1);
   SHT20_init(gpioPortC, 2, gpioPortC, 3);
+
+  cli_app_init();
   sl_zigbee_event_init(&temperature_polling_event, temperature_polling_event_handler);
   sl_zigbee_event_set_delay_ms(&temperature_polling_event, TEMPERATURE_POLLING_PERIOD_MS);
 }
@@ -95,12 +98,36 @@ static void temperature_polling_event_handler(sl_zigbee_event_t *event){
   float temperature = 0;
   float humidity = 0;
 
-  hal_sht20_return_t status = measure_temperature(&temperature);
-  status = measure_humidity(&humidity);
-
+  hal_sht20_return_t status;
   printf("\r\n");
-  printf("Relative Humidity = %.2f%%\r\n", humidity);
-  printf("Temperature = %.2f C\r\n", temperature);
+  status = measure_humidity(&humidity);
+  switch (status) {
+    case SHT20_RETURN_DONE:
+      printf("Relative Humidity = %.2f%%\r\n", humidity);
+      break;
+    case SHT20_RETURN_CORRUPT_DATA:
+      printf("Humidity data corrupted!\r\n");
+      reset_SHT20();
+      break;
+    default:
+      printf("Error reading humidity\r\n");
+      reset_SHT20();
+      break;
+  }
+  status = measure_temperature(&temperature);
+  switch (status) {
+    case SHT20_RETURN_DONE:
+      printf("Temperature = %.2f C\r\n", temperature);
+      break;
+    case SHT20_RETURN_CORRUPT_DATA:
+      printf("Temperature data corrupted!\r\n");
+      reset_SHT20();
+      break;
+    default:
+      printf("Error reading temperature\r\n");
+      reset_SHT20();
+      break;
+  }
 
   sl_zigbee_event_set_delay_ms(event, TEMPERATURE_POLLING_PERIOD_MS);
 }

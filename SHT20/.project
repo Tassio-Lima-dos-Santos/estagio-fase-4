@@ -1501,6 +1501,11 @@
 			<locationURI>STUDIO_SDK_LOC/util/silicon_labs/silabs_core/memory_manager/sl_malloc.h</locationURI>
 		</link>
 		<link>
+			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/aes.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/aes.c</locationURI>
+		</link>
+		<link>
 			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/alignment.h</name>
 			<type>1</type>
 			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/alignment.h</locationURI>
@@ -1576,6 +1581,11 @@
 			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/constant_time_internal.h</locationURI>
 		</link>
 		<link>
+			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/ctr_drbg.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/ctr_drbg.c</locationURI>
+		</link>
+		<link>
 			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/ecp_internal_alt.h</name>
 			<type>1</type>
 			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/ecp_internal_alt.h</locationURI>
@@ -1586,14 +1596,34 @@
 			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/ecp_invasive.h</locationURI>
 		</link>
 		<link>
+			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/entropy.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/entropy.c</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/entropy_poll.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/entropy_poll.c</locationURI>
+		</link>
+		<link>
 			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/entropy_poll.h</name>
 			<type>1</type>
 			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/entropy_poll.h</locationURI>
 		</link>
 		<link>
+			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/hmac_drbg.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/hmac_drbg.c</locationURI>
+		</link>
+		<link>
 			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/lmots.h</name>
 			<type>1</type>
 			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/lmots.h</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/md.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/md.c</locationURI>
 		</link>
 		<link>
 			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/md_psa.h</name>
@@ -1829,6 +1859,11 @@
 			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/rsa_alt_helpers.h</name>
 			<type>1</type>
 			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/rsa_alt_helpers.h</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/sha256.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/util/third_party/mbedtls/library/sha256.c</locationURI>
 		</link>
 		<link>
 			<name>gecko_sdk_4.4.6/util/third_party/mbedtls/library/ssl_client.h</name>
@@ -2409,6 +2444,21 @@
 			<name>gecko_sdk_4.4.6/platform/security/sl_component/sl_mbedtls_support/inc/sli_psa_crypto.h</name>
 			<type>1</type>
 			<locationURI>STUDIO_SDK_LOC/platform/security/sl_component/sl_mbedtls_support/inc/sli_psa_crypto.h</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.4.6/platform/security/sl_component/sl_mbedtls_support/src/mbedtls_sha.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/security/sl_component/sl_mbedtls_support/src/mbedtls_sha.c</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.4.6/platform/security/sl_component/sl_mbedtls_support/src/se_aes.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/security/sl_component/sl_mbedtls_support/src/se_aes.c</locationURI>
+		</link>
+		<link>
+			<name>gecko_sdk_4.4.6/platform/security/sl_component/sl_mbedtls_support/src/sl_entropy_hardware.c</name>
+			<type>1</type>
+			<locationURI>STUDIO_SDK_LOC/platform/security/sl_component/sl_mbedtls_support/src/sl_entropy_hardware.c</locationURI>
 		</link>
 		<link>
 			<name>gecko_sdk_4.4.6/platform/security/sl_component/sl_mbedtls_support/src/sl_mbedtls.c</name>

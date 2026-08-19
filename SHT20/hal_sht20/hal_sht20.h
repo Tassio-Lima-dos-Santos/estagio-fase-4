@@ -56,10 +56,10 @@ typedef enum {
 } hal_sht20_return_t;
 
 typedef enum {
-  HUMIDITY_12BITS_TEMPERATURE_14BITS,
-  HUMIDITY_8BITS_TEMPERATURE_12BITS,
-  HUMIDITY_10BITS_TEMPERATURE_13BITS,
-  HUMIDITY_11BITS_TEMPERATURE_11BITS,
+  HUMIDITY_12BITS_TEMPERATURE_14BITS = 0,
+  HUMIDITY_8BITS_TEMPERATURE_12BITS = 1,
+  HUMIDITY_10BITS_TEMPERATURE_13BITS = 2,
+  HUMIDITY_11BITS_TEMPERATURE_11BITS = 3,
 } temperature_and_humidity_res_t;
 
 /*******************************************************************************

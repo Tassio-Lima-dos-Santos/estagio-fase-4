@@ -30,6 +30,7 @@ component:
 - {id: iostream_recommended_stream}
 - instance: [cli]
   id: iostream_usart
+- {id: mbedtls_random}
 - {id: udelay}
 - {id: zigbee_application_bootloader}
 - {id: zigbee_core_cli}
