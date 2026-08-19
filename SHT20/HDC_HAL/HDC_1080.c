@@ -52,7 +52,7 @@
 #define HDC_1080_CONFIG_FLAG_HRES_8b        0b0000001000000000
 #define HDC_1080_DEFAULT_CONFIG             0b0001000000000000
 
-#define DEFAULT_READ_BUFFER_SIZE            32
+#define READ_TEMP_BUFFER_SIZE            32
 #define DEFAULT_READ_TIMEOUT                50
 
 #define DEFAULT_WRITE_CMD_SIZE              3
@@ -69,8 +69,8 @@
  * Static Variables
  *****************************************************************************/
 
-static uint8_t global_read_buffer[DEFAULT_READ_BUFFER_SIZE];
-static uint16_t global_read_buffer_size = DEFAULT_READ_BUFFER_SIZE;
+static uint8_t global_read_buffer[READ_TEMP_BUFFER_SIZE];
+static uint16_t global_read_buffer_size = READ_TEMP_BUFFER_SIZE;
 
 static float temperature = 25;
 static float relative_humidity = 50;

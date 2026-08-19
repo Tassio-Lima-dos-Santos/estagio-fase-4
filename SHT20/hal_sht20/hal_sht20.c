@@ -49,7 +49,8 @@
 
 #define DEFAULT_WRITE_TIMEOUT 500
 #define DEFAULT_WRITE_BUFFER_SIZE 4
-#define DEFAULT_READ_BUFFER_SIZE 4
+#define READ_TEMP_BUFFER_SIZE 3
+#define READ_HUMIDITY_BUFFER_SIZE 3
 
 /******************************************************************************
  * Macros
@@ -264,7 +265,7 @@ hal_sht20_return_t measure_temperature(float *temperature)
   if(temperature == NULL) return (SHT20_RETURN_INVALID_ARG);
 
   // Get temperature measure info
-  uint8_t temp_measure_response[DEFAULT_READ_BUFFER_SIZE];
+  uint8_t temp_measure_response[READ_TEMP_BUFFER_SIZE];
   uint16_t response_size = sizeof(temp_measure_response);
   if(send_command(TEMP_MEASURE_NO_HOLD_MASTER_INSTRUCTION, NULL, 0) != SHT20_RETURN_DONE)
     return (SHT20_RETURN_INTERNAL_ERR);
@@ -291,7 +292,7 @@ hal_sht20_return_t measure_humidity(float *humidity)
   if(humidity == NULL) return (SHT20_RETURN_INVALID_ARG);
 
   // Get humidity measure info
-  uint8_t humidity_measure_response[DEFAULT_READ_BUFFER_SIZE];
+  uint8_t humidity_measure_response[READ_HUMIDITY_BUFFER_SIZE];
   uint16_t response_size = sizeof(humidity_measure_response);
   if(send_command(HUMIDITY_MEASURE_NO_HOLD_MASTER_INSTRUCTION, NULL, 0) != SHT20_RETURN_DONE)
     return (SHT20_RETURN_INTERNAL_ERR);
@@ -315,7 +316,7 @@ hal_sht20_return_t measure_humidity(float *humidity)
 hal_sht20_return_t enable_on_chip_heater(void)
 {
   // Get user register info
-  uint8_t response_array[DEFAULT_READ_BUFFER_SIZE];
+  uint8_t response_array[READ_TEMP_BUFFER_SIZE];
   uint16_t response_size = sizeof(response_array);
   if(send_command_and_read_response(READ_REGISTER_INSTRUCTION, response_array, &response_size) != SHT20_RETURN_DONE)
     return (SHT20_RETURN_INTERNAL_ERR);
@@ -341,7 +342,7 @@ hal_sht20_return_t enable_on_chip_heater(void)
 hal_sht20_return_t disable_on_chip_heater(void)
 {
   // Get user register info
-  uint8_t response_array[DEFAULT_READ_BUFFER_SIZE];
+  uint8_t response_array[READ_TEMP_BUFFER_SIZE];
   uint16_t response_size = sizeof(response_array);
   if(send_command_and_read_response(READ_REGISTER_INSTRUCTION, response_array, &response_size) != SHT20_RETURN_DONE)
     return (SHT20_RETURN_INTERNAL_ERR);
@@ -367,7 +368,7 @@ hal_sht20_return_t disable_on_chip_heater(void)
 hal_sht20_return_t enable_OTP_reload(void)
 {
   // Get user register info
-  uint8_t response_array[DEFAULT_READ_BUFFER_SIZE];
+  uint8_t response_array[READ_TEMP_BUFFER_SIZE];
   uint16_t response_size = sizeof(response_array);
   if(send_command_and_read_response(READ_REGISTER_INSTRUCTION, response_array, &response_size) != SHT20_RETURN_DONE)
     return (SHT20_RETURN_INTERNAL_ERR);
@@ -393,7 +394,7 @@ hal_sht20_return_t enable_OTP_reload(void)
 hal_sht20_return_t disable_OTP_reload(void)
 {
   // Get user register info
-  uint8_t response_array[DEFAULT_READ_BUFFER_SIZE];
+  uint8_t response_array[READ_TEMP_BUFFER_SIZE];
   uint16_t response_size = sizeof(response_array);
   if(send_command_and_read_response(READ_REGISTER_INSTRUCTION, response_array, &response_size) != SHT20_RETURN_DONE)
     return (SHT20_RETURN_INTERNAL_ERR);
@@ -422,7 +423,7 @@ hal_sht20_return_t check_battery(bool *is_battery_good)
   if(is_battery_good == NULL) return (SHT20_RETURN_INVALID_ARG);
 
   // Get user register info
-  uint8_t response_array[DEFAULT_READ_BUFFER_SIZE];
+  uint8_t response_array[READ_TEMP_BUFFER_SIZE];
   uint16_t response_size = sizeof(response_array);
   if(send_command_and_read_response(READ_REGISTER_INSTRUCTION, response_array, &response_size) != SHT20_RETURN_DONE)
     return (SHT20_RETURN_INTERNAL_ERR);
@@ -441,7 +442,7 @@ hal_sht20_return_t check_battery(bool *is_battery_good)
 hal_sht20_return_t change_measure_resolution(temperature_and_humidity_res_t resolution)
 {
   // Get user register info
-  uint8_t response_array[DEFAULT_READ_BUFFER_SIZE];
+  uint8_t response_array[READ_TEMP_BUFFER_SIZE];
   uint16_t response_size = sizeof(response_array);
   if(send_command_and_read_response(READ_REGISTER_INSTRUCTION, response_array, &response_size) != SHT20_RETURN_DONE)
     return (SHT20_RETURN_INTERNAL_ERR);
@@ -510,14 +511,14 @@ static bool is_crc_correct (const uint8_t* data_array, size_t data_size)
               /* shift in next bit of input stream:
                * If it's 1, set LSB of crc to 1.
                * If it's 0, set LSB of crc to 0. */
-              crc = ((uint8_t)(byte & (1 << i)) != 0) ? (uint8_t)(crc | 0x01) : (uint8_t)(crc & 0xFE);
+              crc = ((uint8_t)(byte & (1 << j)) != 0) ? (uint8_t)(crc | 0x01) : (uint8_t)(crc & 0xFE);
               /* Perform the 'division' by XORing the crc register with the generator polynomial */
               crc = (uint8_t)(crc ^ CRC_POLYNOMIAL);
           }
           else
           {   /* MSB not set, shift it out and shift in next bit of input stream. Same as above, just no division */
               crc = (uint8_t)(crc << 1);
-              crc = ((uint8_t)(byte & (1 << i)) != 0) ? (uint8_t)(crc | 0x01) : (uint8_t)(crc & 0xFE);
+              crc = ((uint8_t)(byte & (1 << j)) != 0) ? (uint8_t)(crc | 0x01) : (uint8_t)(crc & 0xFE);
           }
       }
   }
